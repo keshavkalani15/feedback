@@ -32,9 +32,6 @@ def login():
             elif role == 'teacher':
                 return redirect(url_for('teacher.dashboard'))
             
-            # Placeholder for admin/teacher later
-            return "Login Successful (Teacher/Admin dashboard not ready)"
-            
         return render_template('login.html', error="Invalid Credentials")
     return render_template('login.html')
 

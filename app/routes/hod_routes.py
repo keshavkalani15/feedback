@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import db, User, Session, Allocation, Subject, FeedbackResult, FeedbackComment, ReportApproval
 from sqlalchemy import func
 from app.utils import load_questions
@@ -31,12 +31,62 @@ def view_results():
 def session_teachers(session_id):
     if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
     curr_session = Session.query.get_or_404(session_id)
-    
+
     teacher_ids = db.session.query(Allocation.teacherID).filter_by(sessionID=session_id).distinct().all()
     teacher_ids = [t[0] for t in teacher_ids]
     teachers = User.query.filter(User.userID.in_(teacher_ids)).all()
-    
-    return render_template('hod/session_teachers.html', curr_session=curr_session, teachers=teachers)
+
+    # --- Compute per-teacher status for colour-coding ---
+    # We look at the *overall* approval records (allocationID IS NULL) for each teacher
+    teacher_info = []
+    for t in teachers:
+        # All distinct subject IDs this teacher is allocated to in this session
+        subject_ids = [
+            row[0] for row in
+            db.session.query(Allocation.subjectID)
+                      .filter_by(teacherID=t.userID, sessionID=session_id)
+                      .distinct().all()
+        ]
+        total_subjects = len(subject_ids)
+
+        # Overall-level approval records (one per subject, allocationID=None)
+        overall_approvals = ReportApproval.query.filter_by(
+            sessionID=session_id,
+            teacherID=t.userID,
+            allocationID=None
+        ).all()
+
+        agreed_count   = sum(1 for a in overall_approvals if a.teacher_agreed)
+        approved_count = sum(1 for a in overall_approvals if a.hod_approved)
+
+        all_agreed      = (total_subjects > 0) and (agreed_count   >= total_subjects)
+        all_hod_approved = (total_subjects > 0) and (approved_count >= total_subjects)
+
+        # Sort key: 0 = green (agreed, not yet fully HOD-approved)
+        #           1 = red   (not yet agreed)
+        #           2 = white (fully HOD-approved)
+        if all_hod_approved:
+            sort_key = 2
+            card_status = 'approved'
+        elif all_agreed:
+            sort_key = 0
+            card_status = 'agreed'
+        else:
+            sort_key = 1
+            card_status = 'pending'
+
+        teacher_info.append({
+            'teacher':    t,
+            'status':     card_status,
+            'sort_key':   sort_key,
+        })
+
+    # Sort: green → red → white
+    teacher_info.sort(key=lambda x: x['sort_key'])
+
+    return render_template('hod/session_teachers.html',
+                           curr_session=curr_session,
+                           teacher_info=teacher_info)
 
 @hod_bp.route('/results/report/<int:session_id>/<int:teacher_id>')
 def teacher_report(session_id, teacher_id):
@@ -76,6 +126,7 @@ def teacher_report(session_id, teacher_id):
         # ==========================================
         raw_comments = FeedbackComment.query.filter(
             FeedbackComment.allocationID.in_(all_ids),
+            FeedbackComment.sessionID == session_id,
             FeedbackComment.comment_text != None,
             FeedbackComment.comment_text != ''
         ).all()
@@ -146,7 +197,13 @@ def change_password():
     
     if request.method == 'POST':
         user = User.query.get(session['user_id'])
+        current_pass = request.form.get('current_password', '')
         new_pass = request.form['password']
+        
+        if not check_password_hash(user.password, current_pass):
+            flash("Incorrect current password.", "danger")
+            return redirect(url_for('hod.change_password'))
+        
         user.password = generate_password_hash(new_pass, method='pbkdf2:sha256')
         db.session.commit()
         flash("Password changed.", "success")
@@ -157,10 +214,21 @@ def change_password():
 @hod_bp.route('/approve_report', methods=['POST'])
 def approve_report():
     if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
-    
+
     session_id = request.form.get('session_id')
     teacher_id = request.form.get('teacher_id')
     subject_id = request.form.get('subject_id')
+
+    # Only allow HOD approval on TERMINATED sessions (status=2).
+    # Active (status=1) and Stopped/Paused (status=0) sessions must be fully terminated first.
+    sess_obj = Session.query.get(session_id)
+    if sess_obj and sess_obj.status != 2:
+        if sess_obj.status == 1:
+            flash("You cannot approve reports while the session is still active. Please wait for the admin to terminate it.", "danger")
+        else:
+            flash("You cannot approve reports while the session is paused/stopped. Please wait for the admin to fully terminate it.", "danger")
+        return redirect(request.referrer)
+
     
     # 1. Get the overall approval record
     overall_approval = ReportApproval.query.filter_by(

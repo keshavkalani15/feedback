@@ -1,31 +1,148 @@
 {% extends "hod/base.html" %}
 {% block content %}
-    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
-        <a href="{{ url_for('hod.view_results') }}" class="btn btn-sm btn-blue" style="background: #64748b;">← Sessions</a>
-        <h2 class="page-title" style="margin: 0;">Teachers: {{ curr_session.sessionName }}</h2>
-    </div>
 
-    <input type="text" id="teacherSearch" placeholder="Search Teacher Name or ID..." 
-           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px;">
+<style>
+    /* ── Teacher card base ── */
+    .teacher-card {
+        border-radius: 10px;
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        border: 1.5px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+    .teacher-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
-        {% for t in teachers %}
-        <div class="card teacher-card" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-                <h3 style="margin: 0; font-size: 1rem;">{{ t.name }}</h3>
-                <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ t.prn_empID }}</span>
-            </div>
-            <a href="{{ url_for('hod.teacher_report', session_id=curr_session.sessionID, teacher_id=t.userID) }}" class="btn btn-blue btn-sm">Analysis ➔</a>
+    /* ── Status: teacher fully agreed, HOD still pending → GREEN ── */
+    .teacher-card.status-agreed {
+        background: linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%);
+        border-color: #34d399;
+    }
+    .teacher-card.status-agreed .status-badge {
+        background: #10b981;
+        color: #fff;
+    }
+    .teacher-card.status-agreed .status-icon::before { content: "✔"; }
+
+    /* ── Status: teacher has NOT agreed yet → RED ── */
+    .teacher-card.status-pending {
+        background: linear-gradient(135deg, #fee2e2 0%, #fff1f1 100%);
+        border-color: #f87171;
+    }
+    .teacher-card.status-pending .status-badge {
+        background: #ef4444;
+        color: #fff;
+    }
+    .teacher-card.status-pending .status-icon::before { content: "✖"; }
+
+    /* ── Status: HOD has fully approved → plain white ── */
+    .teacher-card.status-approved {
+        background: #ffffff;
+        border-color: #e2e8f0;
+    }
+    .teacher-card.status-approved .status-badge {
+        background: #94a3b8;
+        color: #fff;
+    }
+    .teacher-card.status-approved .status-icon::before { content: "★"; }
+
+    /* ── Status badge pill ── */
+    .status-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 999px;
+        letter-spacing: 0.04em;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 5px;
+    }
+
+    /* ── Legend ── */
+    .legend-bar {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 18px;
+        align-items: center;
+        font-size: 0.82rem;
+    }
+    .legend-dot {
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 5px;
+        flex-shrink: 0;
+    }
+    .legend-item { display: flex; align-items: center; }
+</style>
+
+<!-- Header -->
+<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+    <a href="{{ url_for('hod.view_results') }}" class="btn btn-sm btn-blue" style="background: #64748b;">← Sessions</a>
+    <h2 class="page-title" style="margin: 0;">Teachers: {{ curr_session.sessionName }}</h2>
+</div>
+
+<!-- Search bar -->
+<input type="text" id="teacherSearch" placeholder="Search Teacher Name or ID..."
+       style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
+              margin-bottom: 16px; font-size: 0.95rem; box-sizing: border-box;">
+
+<!-- Legend -->
+<div class="legend-bar">
+    <span style="font-weight:600; color:#475569;">Legend:</span>
+    <span class="legend-item">
+        <span class="legend-dot" style="background:#10b981;"></span>
+        Teacher agreed to all results (awaiting HOD approval)
+    </span>
+    <span class="legend-item">
+        <span class="legend-dot" style="background:#ef4444;"></span>
+        Teacher has NOT agreed yet
+    </span>
+    <span class="legend-item">
+        <span class="legend-dot" style="background:#94a3b8; border:1px solid #cbd5e1;"></span>
+        HOD has fully approved all results
+    </span>
+</div>
+
+<!-- Teacher grid (already sorted server-side: green → red → white) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+    {% for info in teacher_info %}
+    {% set t = info.teacher %}
+    <div class="card teacher-card status-{{ info.status }}" style="margin-bottom: 0;">
+        <div>
+            <h3 style="margin: 0 0 2px; font-size: 1rem;">{{ t.name }}</h3>
+            <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ t.prn_empID }}</span><br>
+            <span class="status-badge status-icon">
+                {% if info.status == 'agreed' %}
+                    Agreed — Awaiting Approval
+                {% elif info.status == 'pending' %}
+                    Not Yet Agreed
+                {% else %}
+                    HOD Approved
+                {% endif %}
+            </span>
         </div>
-        {% endfor %}
+        <a href="{{ url_for('hod.teacher_report', session_id=curr_session.sessionID, teacher_id=t.userID) }}"
+           class="btn btn-blue btn-sm" style="flex-shrink:0; margin-left:12px;">Analysis ➔</a>
     </div>
+    {% endfor %}
+</div>
 
-    <script>
-        document.getElementById('teacherSearch').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase();
-            document.querySelectorAll('.teacher-card').forEach(card => {
-                card.style.display = card.innerText.toLowerCase().includes(filter) ? 'flex' : 'none';
-            });
+<script>
+    document.getElementById('teacherSearch').addEventListener('keyup', function () {
+        const filter = this.value.toLowerCase();
+        document.querySelectorAll('.teacher-card').forEach(card => {
+            card.style.display = card.innerText.toLowerCase().includes(filter) ? 'flex' : 'none';
         });
-    </script>
+    });
+</script>
+
 {% endblock %}

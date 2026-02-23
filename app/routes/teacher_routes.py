@@ -515,15 +515,26 @@ def session_report(session_id):
     return render_template('teacher/session_report.html', 
                            curr_session=current_session, 
                            reports=reports, 
-                           approval_dict=approval_dict)
+                           approval_dict=approval_dict,
+                           teacher=user)
 
 @teacher_bp.route('/agree_report', methods=['POST'])
 def agree_report():
     if session.get('role') != 'teacher': 
         return redirect(url_for('auth.login'))
-    
-    teacher_id = session['user_id']
+
+    # Only allow agreement on TERMINATED sessions (status=2).
+    # Active (status=1) and Stopped/Paused (status=0) sessions must be fully terminated first.
     session_id = request.form.get('session_id')
+    sess_obj = Session.query.get(session_id)
+    if sess_obj and sess_obj.status != 2:
+        if sess_obj.status == 1:
+            flash("You cannot agree to reports while the session is still active. Please wait for the admin to terminate it.", "danger")
+        else:
+            flash("You cannot agree to reports while the session is paused/stopped. Please wait for the admin to fully terminate it.", "danger")
+        return redirect(request.referrer)
+
+    teacher_id = session['user_id']
     subject_id = request.form.get('subject_id')
     allocation_id = request.form.get('allocation_id') # This will be 'all' for the overall tab
 
@@ -554,7 +565,37 @@ def agree_report():
     else:
         # Just in case it existed but wasn't agreed yet
         approval.teacher_agreed = True
-        
+
+    # 3. CASCADE: if teacher agreed to the OVERALL tab (allocationID=None),
+    #    automatically agree ALL individual subpart (per-class) records too.
+    if db_alloc_id is None:
+        # Fetch all individual allocation IDs for this teacher+subject+session
+        child_alloc_ids = [
+            row[0] for row in
+            db.session.query(Allocation.allocationID)
+                      .filter_by(teacherID=teacher_id,
+                                 subjectID=subject_id,
+                                 sessionID=session_id)
+                      .all()
+        ]
+        for child_id in child_alloc_ids:
+            child_approval = ReportApproval.query.filter_by(
+                sessionID=session_id,
+                teacherID=teacher_id,
+                subjectID=subject_id,
+                allocationID=child_id
+            ).first()
+            if child_approval:
+                child_approval.teacher_agreed = True
+            else:
+                db.session.add(ReportApproval(
+                    sessionID=session_id,
+                    teacherID=teacher_id,
+                    subjectID=subject_id,
+                    allocationID=child_id,
+                    teacher_agreed=True
+                ))
+
     db.session.commit()
     flash("Report successfully signed and agreed.", "success")
     

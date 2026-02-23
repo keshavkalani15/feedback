@@ -98,6 +98,9 @@ class ClassTeacherAllocation(db.Model):
     
 class ReportApproval(db.Model):
     __tablename__ = 'report_approvals'
+    __table_args__ = (
+        db.UniqueConstraint('sessionID', 'teacherID', 'subjectID', 'allocationID', name='uq_report_approval'),
+    )
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     sessionID = db.Column(db.Integer, db.ForeignKey('sessions.sessionID', ondelete='CASCADE'), nullable=False, index=True)
     teacherID = db.Column(db.Integer, db.ForeignKey('users.userID', ondelete='CASCADE'), nullable=False, index=True)

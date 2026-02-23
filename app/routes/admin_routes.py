@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, Response,jsonify
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 from sqlalchemy.exc import IntegrityError
 import io
@@ -618,7 +618,13 @@ def admin_change_password():
     
     if request.method == 'POST':
         user = User.query.get(session['user_id'])
+        current_pass = request.form.get('current_password', '')
         new_pass = request.form['password']
+        
+        if not check_password_hash(user.password, current_pass):
+            flash("Incorrect current password.", "danger")
+            return redirect(url_for('admin.admin_change_password'))
+        
         user.password = generate_password_hash(new_pass, method='pbkdf2:sha256')
         db.session.commit()
         flash("Password changed.", "success")
@@ -668,8 +674,6 @@ def upload_teachers_csv():
         success_count = 0
         updated_count = 0
         skipped_rows = [] # To track errors
-
-        default_password = generate_password_hash("Pass@123", method='pbkdf2:sha256')
         
         for i, row in enumerate(csv_input, start=1):
             # Safe Get (Case Insensitive Lookup attempt)
@@ -689,7 +693,8 @@ def upload_teachers_csv():
                 existing.name = name
                 updated_count += 1
             else:
-                hashed = default_password
+                default_password = f"{prn}@123"
+                hashed = generate_password_hash(default_password, method='pbkdf2:sha256')
                 new_teacher = User(prn_empID=prn, name=name, password=hashed, role='teacher')
                 db.session.add(new_teacher)
                 success_count += 1
@@ -775,6 +780,7 @@ def teacher_report(session_id, teacher_id):
         # ==========================================
         raw_comments = FeedbackComment.query.filter(
             FeedbackComment.allocationID.in_(all_ids),
+            FeedbackComment.sessionID == session_id,
             FeedbackComment.comment_text != None,
             FeedbackComment.comment_text != ''
         ).all()
