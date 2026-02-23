@@ -3,6 +3,7 @@
 <h2 class="page-title">Edit Teacher</h2>
 <div class="card" style="max-width: 600px;">
     <form action="{{ url_for('admin.update_teacher', user_id=teacher.userID) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <label>Employee ID</label>
         <input type="text" name="prn_empID" value="{{ teacher.prn_empID }}" class="form-control" readonly style="background-color: #e9ecef; cursor: not-allowed; color: #6c757d; margin-top: 2px;">
         

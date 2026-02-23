@@ -7,6 +7,7 @@
     <h3 class="card-title">Add New Admin</h3>
     <form action="{{ url_for('hod.create_admin') }}" method="POST" class="form-grid"
         style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group" style="flex: 1;">
             <label>Login ID</label>
             <input type="text" name="emp_id" placeholder="Login ID" required>
@@ -42,6 +43,7 @@
                     <a href="{{ url_for('hod.edit_admin', user_id=a.userID) }}" class="btn btn-blue btn-sm">Edit</a>
                     <form action="{{ url_for('hod.delete_admin', user_id=a.userID) }}" method="POST"
                         onsubmit="return confirm('Delete admin {{ a.name }}?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-red btn-sm">Delete</button>
                     </form>
                 </td>

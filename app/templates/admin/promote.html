@@ -9,6 +9,7 @@
         <li>Promote all other students to the next semester (1→2, 2→3, etc).</li>
     </ul>
     <form action="{{ url_for('admin.promote_students') }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>Type <strong>CONFIRM</strong> to proceed:</label>
             <input type="text" name="confirm" required style="padding: 8px; width: 200px;">

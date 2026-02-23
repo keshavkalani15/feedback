@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>System Login</title>
-    
+
     <style>
         /* =========================================
            1. THEME VARIABLES (Matches Student Portal)
@@ -21,17 +22,22 @@
             --error-bg: #fdf2f2;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
         /* =========================================
            2. LAYOUT
            ========================================= */
-        body { 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            background-color: var(--bg-body); 
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-body);
             color: var(--text-main);
         }
 
@@ -45,7 +51,7 @@
             padding: 40px;
             border-radius: 12px;
             /* Soft Shadow like the dashboard */
-            box-shadow: 0 10px 40px rgba(0,0,0,0.03); 
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border-light);
             text-align: center;
         }
@@ -72,11 +78,13 @@
         form {
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Space between inputs */
+            gap: 15px;
+            /* Space between inputs */
         }
 
         /* Inputs & Select */
-        input, select {
+        input,
+        select {
             width: 100%;
             padding: 12px 15px;
             border: 1px solid var(--border-light);
@@ -89,7 +97,8 @@
         }
 
         /* Focus Effect */
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             border-color: var(--soft-blue);
             background: white;
             box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.1);
@@ -97,7 +106,8 @@
 
         /* Dropdown specific styling */
         select {
-            appearance: none; /* Removes default arrow */
+            appearance: none;
+            /* Removes default arrow */
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%237f8c8d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
             background-repeat: no-repeat;
             background-position: right 15px top 50%;
@@ -137,9 +147,9 @@
             border: 1px solid #fadbd8;
             text-align: left;
         }
-
     </style>
 </head>
+
 <body>
 
     <div class="login-card">
@@ -147,32 +157,34 @@
         <div class="subtitle">Enter your credentials to access the portal</div>
 
         {% if error %}
-            <div id="flash-messages" class="error-msg" style="transition: opacity 0.5s ease;">
-                ⚠️ {{ error }}
-            </div>
+        <div id="flash-messages" class="error-msg" style="transition: opacity 0.5s ease;">
+            ⚠️ {{ error }}
+        </div>
         {% endif %}
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="username" placeholder="PRN / Employee ID" required autocomplete="off">
-            
+
             <input type="password" name="password" placeholder="Password" required>
-            
+
             <button type="submit" class="btn-blue">Login</button>
         </form>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            setTimeout(function() {
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(function () {
                 var flashContainer = document.getElementById('flash-messages');
                 if (flashContainer) {
                     flashContainer.style.opacity = "0";
-                    setTimeout(function() {
+                    setTimeout(function () {
                         flashContainer.style.display = "none";
                     }, 500);
                 }
-            }, 3000); 
+            }, 3000);
         });
     </script>
 </body>
+
 </html>

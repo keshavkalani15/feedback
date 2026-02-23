@@ -6,6 +6,7 @@
   <div class="card">
     <h3 class="card-title">Assign Class Teacher</h3>
     <form action="{{ url_for('admin.assign_class_teacher') }}" method="POST" class="form-grid" style="grid-template-columns: 2fr 1fr 1fr auto;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label>Search Teacher (Emp ID)</label>
         <input list="teachers_list" name="teacher_emp_id" placeholder="Type Employee ID..." required />
@@ -41,6 +42,7 @@
             <td class="action-btn-group">
               <a href="{{ url_for('admin.edit_class_teacher', assign_id=a.id) }}" class="btn btn-blue btn-sm">Edit</a>
               <form action="{{ url_for('admin.delete_class_teacher', assign_id=a.id) }}" method="POST" onsubmit="return confirm('Delete?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="btn btn-red btn-sm">Delete</button>
               </form>
             </td>

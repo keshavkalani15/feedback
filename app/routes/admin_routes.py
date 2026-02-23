@@ -598,6 +598,13 @@ def upload_subjects_csv():
 def delete_subject(sub_id):
     if session.get('role') != 'admin': return redirect(url_for('auth.login'))
     
+    admin_password = request.form.get('admin_password', '')
+    admin_user = User.query.get(session['user_id'])
+    
+    if not admin_password or not check_password_hash(admin_user.password, admin_password):
+        flash("Incorrect admin password. Deletion cancelled.", "danger")
+        return redirect(url_for('admin.manage_subjects'))
+        
     sub = Subject.query.get(sub_id)
     if sub:
         db.session.delete(sub)
@@ -651,6 +658,13 @@ def admin_change_password():
 def delete_teacher(user_id):
     if session.get('role') != 'admin': return redirect(url_for('auth.login'))
     
+    admin_password = request.form.get('admin_password', '')
+    admin_user = User.query.get(session['user_id'])
+    
+    if not admin_password or not check_password_hash(admin_user.password, admin_password):
+        flash("Incorrect admin password. Deletion cancelled.", "danger")
+        return redirect(url_for('admin.manage_teachers'))
+        
     user = User.query.get_or_404(user_id)
     if user.role == 'teacher':
         db.session.delete(user)

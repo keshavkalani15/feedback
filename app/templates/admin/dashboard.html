@@ -40,6 +40,7 @@
                     </td>
                     <td>
                         <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='deactivate' if s.status == 1 else 'activate') }}" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             {% if s.status == 1 %}
                                 <button class="btn btn-red" style="padding: 6px 15px; font-size: 0.8rem;">Stop Session</button>
                             {% else %}

@@ -7,6 +7,7 @@
     <h3 class="card-title">Create New Session</h3>
     <form action="{{ url_for('admin.add_session') }}" method="POST" class="form-grid"
         style="grid-template-columns: 1fr 3fr auto;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>Session ID (Integer)</label>
             <input type="number" name="session_id" placeholder="202601" required>
@@ -60,6 +61,7 @@
                     <form
                         action="{{ url_for('admin.session_action', session_id=s.sessionID, action='deactivate' if s.status == 1 else 'activate') }}"
                         method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm {{ 'btn-red' if s.status == 1 else 'btn-blue' }}">
                             {{ 'Pause' if s.status == 1 else 'Start' }}
                         </button>
@@ -70,6 +72,7 @@
                     <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='terminate') }}"
                         method="POST"
                         onsubmit="return confirm('WARNING: Terminate this session? It cannot be restarted.');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm" style="background: #333; color: white;">Terminate</button>
                     </form>
                     {% endif %}
@@ -78,6 +81,7 @@
                     <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='delete') }}"
                         method="POST"
                         onsubmit="var p = prompt('Enter your admin password to delete this session:'); if(!p) return false; this.querySelector('[name=admin_password]').value = p; return true;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="admin_password" value="">
                         <button class="btn btn-red btn-sm"
                             style="background: white; color: red; border: 1px solid red;">Delete</button>

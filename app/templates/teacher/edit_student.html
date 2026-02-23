@@ -10,6 +10,7 @@
     </div>
 
     <form action="{{ url_for('teacher.edit_student', user_id=student.userID) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
             
             <div class="card" style="margin: 0; padding: 25px; border-radius: 12px; border-top: 5px solid #0284c7; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">

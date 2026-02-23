@@ -536,6 +536,7 @@
                     } else {
                         authHtml += `
                         <form action="/teacher/agree_report" method="POST" style="margin: 0;" onsubmit="return confirm('By agreeing, you digitally sign this report. This cannot be undone. Proceed?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="session_id" value="${currentSessionId}">
                             <input type="hidden" name="subject_id" value="${subjectId}">
                             <input type="hidden" name="allocation_id" value="${allocId}">

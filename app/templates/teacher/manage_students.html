@@ -24,6 +24,7 @@
                 <h4 style="font-size: 0.9rem; color: #7f8c8d; margin-bottom: 15px; font-weight: 600; text-transform: uppercase;">Register Student & Elective</h4>
                 
                 <form action="{{ url_for('teacher.add_student') }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                         <input type="text" name="prn" placeholder="PRN / ID" required style="flex: 1.5; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                         <input type="text" name="name" placeholder="Student Full Name" required style="flex: 3; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
@@ -64,6 +65,7 @@
                 </div>
 
                 <form action="{{ url_for('teacher.upload_students_csv') }}" method="POST" enctype="multipart/form-data" style="display: flex; gap: 10px; align-items: center;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="file" name="file" accept=".csv" required style="padding: 5px; font-size: 0.9rem; width: 100%; border: 1px solid #e2e8f0; border-radius: 6px;">
                     <button class="btn btn-blue btn-sm" style="height: 34px; margin-bottom: 10px;">Upload</button>
                 </form>
@@ -115,6 +117,7 @@
                         <td class="action-cell">
                             <a href="{{ url_for('teacher.edit_student', user_id=s.userID) }}" class="btn btn-blue btn-sm" style="padding: 4px 12px; font-size: 0.8rem;">Edit</a>
                             <form action="{{ url_for('teacher.delete_student', user_id=s.userID) }}" method="POST" onsubmit="return confirm('Remove {{ s.name }}?');" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button class="btn btn-red btn-sm" style="padding: 4px 12px; font-size: 0.8rem;">Delete</button>
                             </form>
                         </td>

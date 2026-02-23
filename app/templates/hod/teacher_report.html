@@ -508,6 +508,7 @@
                 } else {
                     authHtml += `
                         <form action="/hod/approve_report" method="POST" style="margin: 0;" onsubmit="return confirm('Officially approve this report? This cannot be undone.');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="session_id" value="${currentSessionId}">
                             <input type="hidden" name="teacher_id" value="${currentTeacherId}">
                             <input type="hidden" name="subject_id" value="${subjectId}">

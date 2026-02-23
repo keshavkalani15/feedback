@@ -3,6 +3,7 @@
 <h2 class="page-title">Edit Admin</h2>
 <div class="card" style="max-width: 600px;">
     <form action="{{ url_for('hod.update_admin', user_id=admin.userID) }}" method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label>Login ID</label>
             <input type="text" value="{{ admin.prn_empID }}" readonly

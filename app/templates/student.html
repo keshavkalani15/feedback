@@ -318,6 +318,7 @@
 
             {% else %}
             <form action="/student/generate_token" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="session_id" value="{{ item.session.sessionID }}">
               <button type="submit" class="btn btn-blue">Generate Token</button>
             </form>
@@ -338,6 +339,7 @@
       <div class="split-container" style="max-width: 500px; margin: 0 auto;">
         <div class="section-title">Update Password</div>
         <form action="/change_password" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label>Current Password</label>
           <input type="password" name="current_password" id="currentPass" class="form-input" required
             onkeyup="validatePassword()" />

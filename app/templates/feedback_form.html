@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Feedback Form</title>
-    
+
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         /* =========================================
            THEME & LAYOUT
@@ -21,18 +23,22 @@
             --selected-green: #2ecc71;
         }
 
-        body { 
-            font-family: 'Segoe UI', sans-serif; 
-            margin: 0; padding: 0;
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
             color: var(--text-main);
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden;
+            /* Prevent body scroll */
             background-color: var(--bg-body);
         }
 
         /* FULL SCREEN CONTAINER */
         .container-box {
-            width: 100vw; height: 100vh;
-            display: flex; flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
             background: var(--bg-body);
         }
 
@@ -41,388 +47,594 @@
             padding: 15px 40px;
             background: var(--bg-paper);
             border-bottom: 1px solid var(--border-light);
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             flex-shrink: 0;
             z-index: 100;
         }
-        .header h3 { margin: 0; color: var(--primary-slate); font-size: 1.3rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-        .cancel-btn { text-decoration: none; color: var(--text-light); font-weight: 500; transition: 0.2s; border: 1px solid transparent; padding: 5px 15px; border-radius: 4px; }
-        .cancel-btn:hover { color: var(--error-red); border-color: var(--error-red); background: #fff5f5; }
+
+        .header h3 {
+            margin: 0;
+            color: var(--primary-slate);
+            font-size: 1.3rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cancel-btn {
+            text-decoration: none;
+            color: var(--text-light);
+            font-weight: 500;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            padding: 5px 15px;
+            border-radius: 4px;
+        }
+
+        .cancel-btn:hover {
+            color: var(--error-red);
+            border-color: var(--error-red);
+            background: #fff5f5;
+        }
 
         /* SCROLLABLE CONTENT */
         #wizardContent {
-            flex: 1; /* Fills remaining space */
-            overflow-y: auto; /* Internal Scroll */
+            flex: 1;
+            /* Fills remaining space */
+            overflow-y: auto;
+            /* Internal Scroll */
             padding: 40px 0;
-            display: none; /* Hidden until gate unlocked */
+            display: none;
+            /* Hidden until gate unlocked */
         }
 
         /* The "Paper" Form */
         #megaForm {
-            max-width: 1000px; 
+            max-width: 1000px;
             margin: 0 auto;
             background: var(--bg-paper);
             padding: 50px;
             border-radius: 12px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
         }
 
         /* SECURITY GATE */
         #tokenGate {
-            flex: 1; display: flex; flex-direction: column; 
-            justify-content: center; align-items: center; text-align: center;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
             background: var(--bg-body);
         }
+
         .gate-card {
-            background: white; padding: 50px; border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            width: 450px; max-width: 90%;
+            background: white;
+            padding: 50px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            width: 450px;
+            max-width: 90%;
         }
+
         .token-input {
-            font-size: 1.8rem; text-align: center; letter-spacing: 4px; padding: 12px;
-            width: 100%; border: 2px solid var(--border-light); border-radius: 8px;
-            margin-bottom: 25px; text-transform: uppercase; outline: none;
+            font-size: 1.8rem;
+            text-align: center;
+            letter-spacing: 4px;
+            padding: 12px;
+            width: 100%;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            outline: none;
         }
-        .token-input:focus { border-color: var(--soft-blue); box-shadow: 0 0 0 4px rgba(93, 173, 226, 0.1); }
+
+        .token-input:focus {
+            border-color: var(--soft-blue);
+            box-shadow: 0 0 0 4px rgba(93, 173, 226, 0.1);
+        }
 
         /* WIZARD STEPS */
-        .step-content { display: none; animation: fadeIn 0.3s ease-out; }
-        .step-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .step-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
         /* QUESTIONS */
         .subject-header {
-            text-align: center; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 2px solid #f4f6f9;
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f4f6f9;
         }
-        .subject-name { font-size: 2rem; color: var(--soft-blue); margin: 0 0 10px 0; }
-        .subject-meta { color: var(--text-light); font-size: 1.1rem; }
 
-        .question-block { 
-            margin-bottom: 30px; padding: 20px; border-radius: 8px;
-            background: #fff; border: 1px solid transparent; transition: 0.2s;
+        .subject-name {
+            font-size: 2rem;
+            color: var(--soft-blue);
+            margin: 0 0 10px 0;
         }
-        .question-block:hover { background: #fdfdfd; border-color: #eee; }
-        
+
+        .subject-meta {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .question-block {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 8px;
+            background: #fff;
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+
+        .question-block:hover {
+            background: #fdfdfd;
+            border-color: #eee;
+        }
+
         /* Highlight answered questions lightly */
-        .question-block.answered { border-left: 4px solid var(--selected-green); }
+        .question-block.answered {
+            border-left: 4px solid var(--selected-green);
+        }
 
-        .question-text { font-weight: 600; margin-bottom: 15px; color: var(--text-main); display: block; font-size: 1.1rem; }
+        .question-text {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-main);
+            display: block;
+            font-size: 1.1rem;
+        }
 
         /* RADIO BUTTONS (The Fix) */
-        .scale-container { display: flex; align-items: center; gap: 15px; margin-top: 10px; }
-        .scale-label { font-size: 0.85rem; color: var(--text-light); font-weight: 700; text-transform: uppercase; width: 60px; }
-        .scale-label.low { text-align: right; }
+        .scale-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
 
-        .rating-group { display: flex; gap: 5px; flex: 1; position: relative; }
-        
+        .scale-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 700;
+            text-transform: uppercase;
+            width: 60px;
+        }
+
+        .scale-label.low {
+            text-align: right;
+        }
+
+        .rating-group {
+            display: flex;
+            gap: 5px;
+            flex: 1;
+            position: relative;
+        }
+
         /* FIX: Move input off-screen but keep it accessible */
         .rating-group input {
             position: absolute;
             left: -9999px;
             opacity: 0;
         }
-        
+
         .rating-group label {
-            flex: 1; padding: 14px 0; background: #f8f9fa; text-align: center; cursor: pointer;
-            border: 1px solid #e0e6ed; font-size: 1rem; font-weight: bold; color: #b0b8c1; 
-            border-radius: 6px; transition: all 0.2s; user-select: none;
+            flex: 1;
+            padding: 14px 0;
+            background: #f8f9fa;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #e0e6ed;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #b0b8c1;
+            border-radius: 6px;
+            transition: all 0.2s;
+            user-select: none;
         }
-        
-        .rating-group label:hover { background: #eef2f7; color: var(--text-main); border-color: #dbe2ef; }
-        
+
+        .rating-group label:hover {
+            background: #eef2f7;
+            color: var(--text-main);
+            border-color: #dbe2ef;
+        }
+
         /* Checked State */
-        .rating-group input:checked + label {
-            background: var(--soft-blue); color: white; border-color: var(--soft-blue);
-            box-shadow: 0 4px 10px rgba(93, 173, 226, 0.4); transform: translateY(-2px);
+        .rating-group input:checked+label {
+            background: var(--soft-blue);
+            color: white;
+            border-color: var(--soft-blue);
+            box-shadow: 0 4px 10px rgba(93, 173, 226, 0.4);
+            transform: translateY(-2px);
         }
 
         /* TEXTAREA */
         textarea {
-            width: 100%; height: 100px; margin-top: 30px; padding: 15px;
-            border: 1px solid var(--border-light); border-radius: 8px; resize: none; 
-            font-family: inherit; font-size: 1rem; background: #fafafa;
+            width: 100%;
+            height: 100px;
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            background: #fafafa;
         }
-        textarea:focus { border-color: var(--soft-blue); background: white; outline: none; }
+
+        textarea:focus {
+            border-color: var(--soft-blue);
+            background: white;
+            outline: none;
+        }
 
         /* FOOTER */
-        .footer { 
-            padding: 20px 40px; background: var(--bg-paper); border-top: 1px solid var(--border-light); 
-            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        .footer {
+            padding: 20px 40px;
+            background: var(--bg-paper);
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
         }
-        
-        .btn { padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 1rem; transition: 0.2s; }
-        .btn-gray { background: #f1f2f6; color: var(--text-light); }
-        .btn-gray:hover { background: #e1e4e8; color: var(--text-main); }
-        .btn-blue { background: var(--soft-blue); color: white; }
-        .btn-blue:hover { background: #4a9ecf; transform: translateY(-1px); }
-        .btn-green { background: var(--selected-green); color: white; display: none; }
-        .btn-green:hover { background: #27ae60; transform: translateY(-1px); }
-        
-        .error-msg { color: var(--error-red); font-size: 1rem; margin-top: 15px; display: none; font-weight: 500; }
-        
-        /* PROGRESS BAR */
-        .progress-container { height: 6px; background: #e0e6ed; width: 100%; flex-shrink: 0; }
-        .fill { height: 100%; background: var(--soft-blue); width: 0%; transition: width 0.3s ease-in-out; }
 
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+
+        .btn-gray {
+            background: #f1f2f6;
+            color: var(--text-light);
+        }
+
+        .btn-gray:hover {
+            background: #e1e4e8;
+            color: var(--text-main);
+        }
+
+        .btn-blue {
+            background: var(--soft-blue);
+            color: white;
+        }
+
+        .btn-blue:hover {
+            background: #4a9ecf;
+            transform: translateY(-1px);
+        }
+
+        .btn-green {
+            background: var(--selected-green);
+            color: white;
+            display: none;
+        }
+
+        .btn-green:hover {
+            background: #27ae60;
+            transform: translateY(-1px);
+        }
+
+        .error-msg {
+            color: var(--error-red);
+            font-size: 1rem;
+            margin-top: 15px;
+            display: none;
+            font-weight: 500;
+        }
+
+        /* PROGRESS BAR */
+        .progress-container {
+            height: 6px;
+            background: #e0e6ed;
+            width: 100%;
+            flex-shrink: 0;
+        }
+
+        .fill {
+            height: 100%;
+            background: var(--soft-blue);
+            width: 0%;
+            transition: width 0.3s ease-in-out;
+        }
     </style>
 </head>
+
 <body>
-<input type="hidden" id="currentSessionId" value="{{ current_session_id }}">
-<div class="container-box">
-    <div class="header">
-        <h3>Feedback Wizard</h3>
-        <a href="/student/dashboard" class="cancel-btn">Exit Form</a>
-    </div>
-
-    <div id="tokenGate">
-        <div class="gate-card">
-            <span style="font-size: 3rem; display: block; margin-bottom: 10px;">🔒</span>
-            <h2 style="color: var(--primary-slate); margin-bottom: 10px;">Security Check</h2>
-            <p style="color: var(--text-light); margin-bottom: 30px;">
-                Enter your Anonymity Token
-            </p>
-            
-            <input type="text" id="gateTokenInput" class="token-input" placeholder="TOKEN" maxlength="10">
-            <button class="btn btn-blue" onclick="verifyToken()" style="width: 100%;">Unlock Form</button>
-            <p id="gateError" class="error-msg">Invalid Token.</p>
+    <input type="hidden" id="currentSessionId" value="{{ current_session_id }}">
+    <div class="container-box">
+        <div class="header">
+            <h3>Feedback Wizard</h3>
+            <a href="/student/dashboard" class="cancel-btn">Exit Form</a>
         </div>
-    </div>
 
-    <div class="progress-container" id="progressBar" style="display:none;">
-        <div class="fill" id="progress"></div>
-    </div>
+        <div id="tokenGate">
+            <div class="gate-card">
+                <span style="font-size: 3rem; display: block; margin-bottom: 10px;">🔒</span>
+                <h2 style="color: var(--primary-slate); margin-bottom: 10px;">Security Check</h2>
+                <p style="color: var(--text-light); margin-bottom: 30px;">
+                    Enter your Anonymity Token
+                </p>
 
-    <div id="wizardContent">
-        <form id="megaForm">
-            {% for alloc in allocations %}
-            <div class="step-content" data-step="{{ loop.index0 }}" data-alloc-id="{{ alloc.allocationID }}">
-                
-                <div class="subject-header">
-                    <h2 class="subject-name">{{ alloc.subject.subjectName }}</h2>
-                    <div class="subject-meta">
-                        Instructor: <strong>{{ alloc.teacher.name }}</strong> &nbsp;|&nbsp; Type: <strong>{{ alloc.subject.subjectType }}</strong>
-                    </div>
-                </div>
+                <input type="text" id="gateTokenInput" class="token-input" placeholder="TOKEN" maxlength="10">
+                <button class="btn btn-blue" onclick="verifyToken()" style="width: 100%;">Unlock Form</button>
+                <p id="gateError" class="error-msg">Invalid Token.</p>
+            </div>
+        </div>
 
-                {% set current_questions = theory_questions if alloc.subject.subjectType == 'Theory' else lab_questions %}
+        <div class="progress-container" id="progressBar" style="display:none;">
+            <div class="fill" id="progress"></div>
+        </div>
 
-                {% for q in current_questions %}
-                {% set q_ind = loop.index %}
-                
-                <div class="question-block" id="qblock_{{ alloc.allocationID }}_{{ q_ind }}">
-                    <span class="question-text">
-                        {{ q_ind }}. {{ q }} <span style="color: #e74c3c;">*</span>
-                    </span>
-                    
-                    <div class="scale-container">
-                        <span class="scale-label low">Poor</span>
-                        <div class="rating-group">
-                            {% for i in range(1, 11) %}
-                                <input type="radio" 
-                                       name="q{{ q_ind }}_alloc{{ alloc.allocationID }}" 
-                                       id="q{{ q_ind }}_{{ alloc.allocationID }}_{{ i }}" 
-                                       value="{{ i }}"
-                                       onclick="markAnswered('{{ alloc.allocationID }}', '{{ q_ind }}')">
-                                <label for="q{{ q_ind }}_{{ alloc.allocationID }}_{{ i }}">{{ i }}</label>
-                            {% endfor %}
+        <div id="wizardContent">
+            <form id="megaForm">
+                {% for alloc in allocations %}
+                <div class="step-content" data-step="{{ loop.index0 }}" data-alloc-id="{{ alloc.allocationID }}">
+
+                    <div class="subject-header">
+                        <h2 class="subject-name">{{ alloc.subject.subjectName }}</h2>
+                        <div class="subject-meta">
+                            Instructor: <strong>{{ alloc.teacher.name }}</strong> &nbsp;|&nbsp; Type: <strong>{{
+                                alloc.subject.subjectType }}</strong>
                         </div>
-                        <span class="scale-label high">Excellent</span>
                     </div>
+
+                    {% set current_questions = theory_questions if alloc.subject.subjectType == 'Theory' else
+                    lab_questions %}
+
+                    {% for q in current_questions %}
+                    {% set q_ind = loop.index %}
+
+                    <div class="question-block" id="qblock_{{ alloc.allocationID }}_{{ q_ind }}">
+                        <span class="question-text">
+                            {{ q_ind }}. {{ q }} <span style="color: #e74c3c;">*</span>
+                        </span>
+
+                        <div class="scale-container">
+                            <span class="scale-label low">Poor</span>
+                            <div class="rating-group">
+                                {% for i in range(1, 11) %}
+                                <input type="radio" name="q{{ q_ind }}_alloc{{ alloc.allocationID }}"
+                                    id="q{{ q_ind }}_{{ alloc.allocationID }}_{{ i }}" value="{{ i }}"
+                                    onclick="markAnswered('{{ alloc.allocationID }}', '{{ q_ind }}')">
+                                <label for="q{{ q_ind }}_{{ alloc.allocationID }}_{{ i }}">{{ i }}</label>
+                                {% endfor %}
+                            </div>
+                            <span class="scale-label high">Excellent</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <textarea maxlength="50"
+                        placeholder="Optional: Any specific comments about this subject? Max 50 characters..."></textarea>
                 </div>
                 {% endfor %}
-                
-                <textarea maxlength="50" placeholder="Optional: Any specific comments about this subject? Max 50 characters..."></textarea>
-            </div>
-            {% endfor %}
-        </form>
-    </div>
+            </form>
+        </div>
 
-    <div class="footer" id="formFooter" style="display:none;">
-        <button type="button" class="btn btn-gray" id="prevBtn" onclick="prevStep()">← Previous Subject</button>
-        
-        <div>
-            <button type="button" class="btn btn-blue" id="nextBtn" onclick="nextStep()">Next Subject ➔</button>
-            <button type="button" class="btn btn-green" id="submitBtn" onclick="submitAll()">Submit All Feedback ✓</button>
+        <div class="footer" id="formFooter" style="display:none;">
+            <button type="button" class="btn btn-gray" id="prevBtn" onclick="prevStep()">← Previous Subject</button>
+
+            <div>
+                <button type="button" class="btn btn-blue" id="nextBtn" onclick="nextStep()">Next Subject ➔</button>
+                <button type="button" class="btn btn-green" id="submitBtn" onclick="submitAll()">Submit All Feedback
+                    ✓</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    let currentStep = 0;
-    const totalSteps = {{ allocations|length }};
-    let verifiedToken = ""; 
+    <script>
+        let currentStep = 0;
+        const totalSteps = {{ allocations| length }};
+        let verifiedToken = "";
 
-    // --- VISUAL: MARK ANSWERED ---
-    function markAnswered(allocId, qInd) {
-        document.getElementById(`qblock_${allocId}_${qInd}`).classList.add('answered');
-    }
-
-    // --- STEP 1: VERIFY TOKEN ---
-    async function verifyToken() {
-        const input = document.getElementById('gateTokenInput').value.trim();
-        const errorMsg = document.getElementById('gateError');
-        const btn = document.querySelector('#tokenGate button');
-        
-        // 1. SAFE CHECK for Session ID
-        const sessionEl = document.getElementById('currentSessionId');
-        if (!sessionEl) {
-            alert("System Error: Session ID missing from page. Please refresh or contact admin.");
-            return;
-        }
-        const sessionId = sessionEl.value;
-
-        if (!input) { 
-            errorMsg.innerText = "Please enter a token."; 
-            errorMsg.style.display = 'block'; 
-            return; 
+        // --- VISUAL: MARK ANSWERED ---
+        function markAnswered(allocId, qInd) {
+            document.getElementById(`qblock_${allocId}_${qInd}`).classList.add('answered');
         }
 
-        btn.innerText = "Verifying..."; 
-        btn.disabled = true;
+        // --- STEP 1: VERIFY TOKEN ---
+        async function verifyToken() {
+            const input = document.getElementById('gateTokenInput').value.trim();
+            const errorMsg = document.getElementById('gateError');
+            const btn = document.querySelector('#tokenGate button');
 
-        try {
-            const res = await fetch('/student/verify_gate_token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: input, session_id: sessionId })
-            });
-            
-            const data = await res.json();
+            // 1. SAFE CHECK for Session ID
+            const sessionEl = document.getElementById('currentSessionId');
+            if (!sessionEl) {
+                alert("System Error: Session ID missing from page. Please refresh or contact admin.");
+                return;
+            }
+            const sessionId = sessionEl.value;
 
-            if (data.status === 'success') {
-                // Success! Unlock the UI
-                verifiedToken = input;
-                document.getElementById('tokenGate').style.display = 'none';
-                document.getElementById('progressBar').style.display = 'block';
-                document.getElementById('wizardContent').style.display = 'block';
-                document.getElementById('formFooter').style.display = 'flex';
-                showStep(0);
-            } else {
-                // Server said "No"
-                errorMsg.innerText = data.message || "Invalid Token.";
+            if (!input) {
+                errorMsg.innerText = "Please enter a token.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            btn.innerText = "Verifying...";
+            btn.disabled = true;
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const res = await fetch('/student/verify_gate_token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ token: input, session_id: sessionId })
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    // Success! Unlock the UI
+                    verifiedToken = input;
+                    document.getElementById('tokenGate').style.display = 'none';
+                    document.getElementById('progressBar').style.display = 'block';
+                    document.getElementById('wizardContent').style.display = 'block';
+                    document.getElementById('formFooter').style.display = 'flex';
+                    showStep(0);
+                } else {
+                    // Server said "No"
+                    errorMsg.innerText = data.message || "Invalid Token.";
+                    errorMsg.style.display = 'block';
+                    btn.innerText = "Unlock Form";
+                    btn.disabled = false;
+                }
+            } catch (e) {
+                console.error(e);
+                errorMsg.innerText = "Connection Error.";
                 errorMsg.style.display = 'block';
                 btn.innerText = "Unlock Form";
                 btn.disabled = false;
             }
-        } catch (e) {
-            console.error(e);
-            errorMsg.innerText = "Connection Error.";
-            errorMsg.style.display = 'block';
-            btn.innerText = "Unlock Form";
-            btn.disabled = false;
         }
-    }
 
-    // --- STEP 2: NAVIGATION ---
-    function showStep(n) {
-        document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
-        document.querySelector(`.step-content[data-step="${n}"]`).classList.add('active');
-        
-        document.getElementById('wizardContent').scrollTop = 0; // Scroll to top
+        // --- STEP 2: NAVIGATION ---
+        function showStep(n) {
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.step-content[data-step="${n}"]`).classList.add('active');
 
-        // Progress Bar
-        let pct = ((n + 1) / totalSteps) * 100;
-        document.getElementById('progress').style.width = pct + '%';
-        
-        // Buttons
-        document.getElementById('prevBtn').style.visibility = (n === 0) ? 'hidden' : 'visible';
+            document.getElementById('wizardContent').scrollTop = 0; // Scroll to top
 
-        if (n === totalSteps - 1) {
-            document.getElementById('nextBtn').style.display = 'none';
-            document.getElementById('submitBtn').style.display = 'inline-block';
-        } else {
-            document.getElementById('nextBtn').style.display = 'inline-block';
-            document.getElementById('submitBtn').style.display = 'none';
-        }
-    }
-    
-    function validateStep(n) {
-        const currentDiv = document.querySelector(`.step-content[data-step="${n}"]`);
-        const totalQuestions = currentDiv.querySelectorAll('.question-block').length;
-        const answeredCount = currentDiv.querySelectorAll('input[type="radio"]:checked').length;
+            // Progress Bar
+            let pct = ((n + 1) / totalSteps) * 100;
+            document.getElementById('progress').style.width = pct + '%';
 
-        if (answeredCount < totalQuestions) {
-            const missing = totalQuestions - answeredCount;
-            alert(`⚠️ Missing Answers\n\nYou have missed ${missing} questions on this page.`);
-            return false;
-        }
-        return true;
-    }
+            // Buttons
+            document.getElementById('prevBtn').style.visibility = (n === 0) ? 'hidden' : 'visible';
 
-    function nextStep() {
-        if (validateStep(currentStep)) {
-            currentStep++;
-            showStep(currentStep);
-        }
-    }
-
-    function prevStep() {
-        if (currentStep > 0) {
-            currentStep--;
-            showStep(currentStep);
-        }
-    }
-    
-    // --- STEP 3: SUBMIT ---
-    async function submitAll() {
-        if(!verifiedToken) { alert("Security Token Missing! Please refresh."); return; }
-        
-        // 1. Validate the FINAL page
-        if (!validateStep(currentStep)) return;
-
-        // 2. Double check ALL pages (Safe Guard)
-        const feedbackData = [];
-        const steps = document.querySelectorAll('.step-content');
-        
-        for(let i=0; i < totalSteps; i++) {
-            const step = steps[i];
-            const allocId = step.getAttribute('data-alloc-id');
-            const comment = step.querySelector('textarea').value;
-            const qCount = step.querySelectorAll('.question-block').length;
-            
-            // Check if any question is missing in this step
-            const answeredInStep = step.querySelectorAll('input[type="radio"]:checked').length;
-            if (answeredInStep < qCount) {
-                alert(`Error: Subject #${i+1} is incomplete. Please go back and fill it.`);
-                showStep(i); // Take user to that step
-                currentStep = i;
-                return;
-            }
-
-            let answers = { allocationID: allocId, comment: comment };
-
-            for(let qNum=1; qNum <= qCount; qNum++) {
-                const checked = step.querySelector(`input[name="q${qNum}_alloc${allocId}"]:checked`);
-                if (checked) answers[`q${qNum}`] = checked.value;
-            }
-            feedbackData.push(answers);
-        }
-        
-        // 3. Send Data
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = "Submitting..."; btn.disabled = true;
-
-        try {
-            const res = await fetch('/student/submit_feedback', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ token: verifiedToken, feedbacks: feedbackData })
-            });
-            
-            const data = await res.json();
-            if(data.status === 'success') {
-                alert("✅ Feedback Submitted Successfully!");
-                window.location.href = "/student/dashboard";
+            if (n === totalSteps - 1) {
+                document.getElementById('nextBtn').style.display = 'none';
+                document.getElementById('submitBtn').style.display = 'inline-block';
             } else {
-                alert("Error: " + data.message);
+                document.getElementById('nextBtn').style.display = 'inline-block';
+                document.getElementById('submitBtn').style.display = 'none';
+            }
+        }
+
+        function validateStep(n) {
+            const currentDiv = document.querySelector(`.step-content[data-step="${n}"]`);
+            const totalQuestions = currentDiv.querySelectorAll('.question-block').length;
+            const answeredCount = currentDiv.querySelectorAll('input[type="radio"]:checked').length;
+
+            if (answeredCount < totalQuestions) {
+                const missing = totalQuestions - answeredCount;
+                alert(`⚠️ Missing Answers\n\nYou have missed ${missing} questions on this page.`);
+                return false;
+            }
+            return true;
+        }
+
+        function nextStep() {
+            if (validateStep(currentStep)) {
+                currentStep++;
+                showStep(currentStep);
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        }
+
+        // --- STEP 3: SUBMIT ---
+        async function submitAll() {
+            if (!verifiedToken) { alert("Security Token Missing! Please refresh."); return; }
+
+            // 1. Validate the FINAL page
+            if (!validateStep(currentStep)) return;
+
+            // 2. Double check ALL pages (Safe Guard)
+            const feedbackData = [];
+            const steps = document.querySelectorAll('.step-content');
+
+            for (let i = 0; i < totalSteps; i++) {
+                const step = steps[i];
+                const allocId = step.getAttribute('data-alloc-id');
+                const comment = step.querySelector('textarea').value;
+                const qCount = step.querySelectorAll('.question-block').length;
+
+                // Check if any question is missing in this step
+                const answeredInStep = step.querySelectorAll('input[type="radio"]:checked').length;
+                if (answeredInStep < qCount) {
+                    alert(`Error: Subject #${i + 1} is incomplete. Please go back and fill it.`);
+                    showStep(i); // Take user to that step
+                    currentStep = i;
+                    return;
+                }
+
+                let answers = { allocationID: allocId, comment: comment };
+
+                for (let qNum = 1; qNum <= qCount; qNum++) {
+                    const checked = step.querySelector(`input[name="q${qNum}_alloc${allocId}"]:checked`);
+                    if (checked) answers[`q${qNum}`] = checked.value;
+                }
+                feedbackData.push(answers);
+            }
+
+            // 3. Send Data
+            const btn = document.getElementById('submitBtn');
+            btn.innerText = "Submitting..."; btn.disabled = true;
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const res = await fetch('/student/submit_feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ token: verifiedToken, feedbacks: feedbackData })
+                });
+
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert("✅ Feedback Submitted Successfully!");
+                    window.location.href = "/student/dashboard";
+                } else {
+                    alert("Error: " + data.message);
+                    btn.innerText = "Submit All Feedback ✓"; btn.disabled = false;
+                }
+            } catch (e) {
+                alert("Network Error.");
                 btn.innerText = "Submit All Feedback ✓"; btn.disabled = false;
             }
-        } catch(e) {
-            alert("Network Error.");
-            btn.innerText = "Submit All Feedback ✓"; btn.disabled = false;
         }
-    }
-</script>
+    </script>
 
 </body>
+
 </html>

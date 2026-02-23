@@ -1,14 +1,16 @@
 from flask import Flask
 from config import Config
 from app.models import db
+from flask_wtf.csrf import CSRFProtect
 
+csrf = CSRFProtect()
 
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
     db.init_app(app)
-    # login_manager.init_app(app) # You likely need this line too if you use flask-login!
+    csrf.init_app(app)
     
     # --- REGISTER BLUEPRINTS ---
     from app.routes.auth_routes import auth_bp
