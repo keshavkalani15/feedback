@@ -102,9 +102,12 @@ def session_action(session_id, action):
         
     # --- UPDATED DELETE LOGIC ---
     elif action == 'delete':
-        # 1. Check if Active
+        has_allocs = Allocation.query.filter_by(sessionID=session_id).count() > 0
+        # Only terminated sessions or empty inactive sessions can be deleted
         if s.status == 1:
-            flash("Cannot delete a LIVE session. Pause it first.", "danger")
+            flash("Cannot delete a LIVE session. Pause or terminate it first.", "danger")
+        elif s.status == 0 and has_allocs:
+            flash("Cannot delete a stopped session with allocations. Terminate it first or remove allocations.", "danger")
         
         # 2. Verify admin password
         else:

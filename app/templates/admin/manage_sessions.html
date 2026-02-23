@@ -74,7 +74,7 @@
                     </form>
                     {% endif %}
 
-                    {% if s.status != 1 %}
+                    {% if s.status == 2 or (s.status == 0 and s.alloc_count == 0) %}
                     <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='delete') }}"
                         method="POST"
                         onsubmit="var p = prompt('Enter your admin password to delete this session:'); if(!p) return false; this.querySelector('[name=admin_password]').value = p; return true;">
