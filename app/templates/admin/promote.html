@@ -1,18 +1,24 @@
 {% extends "admin/base.html" %}
 {% block content %}
-    <h2 class="page-title">Semester Increment</h2>
-    <div class="card" style="border-left: 4px solid var(--danger-red);">
-        <h3 style="color: var(--danger-red);">⚠️ Danger Zone</h3>
-        <p>This action will:</p>
-        <ul style="margin-left: 20px; margin-bottom: 15px;">
-            <li>Delete all students in Semester 8 (Final Year).</li>
-            <li>Promote all other students to the next semester (1→2, 2→3, etc).</li>
-        </ul>
-        <form action="{{ url_for('admin.promote_students') }}" method="POST">
-            <label>Type <strong>CONFIRM</strong> to proceed:</label><br>
-            <input type="text" name="confirm" required style="padding: 8px; margin: 10px 0; width: 200px;">
-            <br>
-            <button class="btn btn-red">Execute Promotion</button>
-        </form>
-    </div>
+<h2 class="page-title">Semester Increment</h2>
+<div class="card" style="border-left: 4px solid var(--danger-red);">
+    <h3 style="color: var(--danger-red);">⚠️ Danger Zone</h3>
+    <p>This action will:</p>
+    <ul style="margin-left: 20px; margin-bottom: 15px;">
+        <li>Delete all students in Semester 8 (Final Year).</li>
+        <li>Promote all other students to the next semester (1→2, 2→3, etc).</li>
+    </ul>
+    <form action="{{ url_for('admin.promote_students') }}" method="POST">
+        <div class="form-group">
+            <label>Type <strong>CONFIRM</strong> to proceed:</label>
+            <input type="text" name="confirm" required style="padding: 8px; width: 200px;">
+        </div>
+        <div class="form-group">
+            <label>Admin Password:</label>
+            <input type="password" name="admin_password" required style="padding: 8px; width: 200px;"
+                placeholder="Enter your password">
+        </div>
+        <button class="btn btn-red">Execute Promotion</button>
+    </form>
+</div>
 {% endblock %}

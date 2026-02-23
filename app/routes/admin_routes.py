@@ -106,14 +106,17 @@ def session_action(session_id, action):
         if s.status == 1:
             flash("Cannot delete a LIVE session. Pause it first.", "danger")
         
-        # 2. Check Allocations (Security)
-        elif Allocation.query.filter_by(sessionID=session_id).count() > 0:
-            flash(f"Cannot delete Session '{s.sessionName}' because it has allocations. Remove them first.", "danger")
-        
-        # 3. Safe to Delete
+        # 2. Verify admin password
         else:
-            db.session.delete(s)
-            flash("Session deleted successfully.", "success")
+            admin_password = request.form.get('admin_password', '')
+            admin_user = User.query.get(session['user_id'])
+            if not admin_password or not check_password_hash(admin_user.password, admin_password):
+                flash("Incorrect password. Delete cancelled.", "danger")
+            else:
+                # Delete all related data first
+                Allocation.query.filter_by(sessionID=session_id).delete()
+                db.session.delete(s)
+                flash("Session and all related data deleted successfully.", "success")
 
     db.session.commit()
     return redirect(request.referrer)
@@ -251,7 +254,12 @@ def promote_students():
     if session.get('role') != 'admin': return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
-        if request.form.get('confirm') == 'CONFIRM':
+        admin_password = request.form.get('admin_password', '')
+        admin_user = User.query.get(session['user_id'])
+        
+        if not check_password_hash(admin_user.password, admin_password):
+            flash("Incorrect password. Promotion cancelled.", "danger")
+        elif request.form.get('confirm') == 'CONFIRM':
             try:
                 # Delete Sem 8
                 User.query.filter(User.role=='student', User.semester >= 8).delete()
