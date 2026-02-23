@@ -258,3 +258,82 @@ def approve_report():
         flash("Cannot approve. The teacher must agree to the overall report first.", "danger")
         
     return redirect(request.referrer)   
+
+# ==========================================
+# CREATE ADMIN (HOD Only)
+# ==========================================
+@hod_bp.route('/create_admin', methods=['GET', 'POST'])
+def create_admin():
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    
+    if request.method == 'POST':
+        emp_id = request.form.get('emp_id', '').strip()
+        name = request.form.get('name', '').strip()
+        
+        if not emp_id or not name:
+            flash("Login ID and Name are required.", "danger")
+            return redirect(url_for('hod.create_admin'))
+        
+        existing = User.query.filter_by(prn_empID=emp_id).first()
+        if existing:
+            flash(f"A user with ID '{emp_id}' already exists.", "warning")
+            return redirect(url_for('hod.create_admin'))
+        
+        try:
+            new_admin = User(
+                prn_empID=emp_id,
+                name=name,
+                password=generate_password_hash('Admin@123', method='pbkdf2:sha256'),
+                role='admin'
+            )
+            db.session.add(new_admin)
+            db.session.commit()
+            flash(f"Admin '{name}' created successfully. Default password: Admin@123", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error: {e}", "danger")
+        
+        return redirect(url_for('hod.create_admin'))
+    
+    admins = User.query.filter_by(role='admin').all()
+    return render_template('hod/create_admin.html', admins=admins)
+
+@hod_bp.route('/edit_admin/<int:user_id>')
+def edit_admin(user_id):
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    admin = User.query.get_or_404(user_id)
+    return render_template('hod/edit_admin.html', admin=admin)
+
+@hod_bp.route('/update_admin/<int:user_id>', methods=['POST'])
+def update_admin(user_id):
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    admin = User.query.get_or_404(user_id)
+    
+    admin.name = request.form['name']
+    
+    new_pass = request.form.get('password')
+    if new_pass:
+        admin.password = generate_password_hash(new_pass, method='pbkdf2:sha256')
+    
+    db.session.commit()
+    flash("Admin updated successfully.", "success")
+    return redirect(url_for('hod.create_admin'))
+
+@hod_bp.route('/delete_admin/<int:user_id>', methods=['POST'])
+def delete_admin(user_id):
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    
+    user = User.query.get_or_404(user_id)
+    if user.role != 'admin':
+        flash("Cannot delete non-admin users via this route.", "danger")
+        return redirect(url_for('hod.create_admin'))
+    
+    admin_count = User.query.filter_by(role='admin').count()
+    if admin_count <= 1:
+        flash("Cannot delete the last admin. At least one admin must exist.", "danger")
+        return redirect(url_for('hod.create_admin'))
+    
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"Admin '{user.name}' deleted.", "success")
+    return redirect(url_for('hod.create_admin'))

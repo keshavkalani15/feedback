@@ -8,11 +8,11 @@
         <form action="{{ url_for('admin.add_session') }}" method="POST" class="form-grid" style="grid-template-columns: 1fr 3fr auto;">
             <div class="form-group">
                 <label>Session ID (Integer)</label>
-                <input type="number" name="session_id" placeholder="e.g. 202601" required>
+                <input type="number" name="session_id" placeholder="202601" required>
             </div>
             <div class="form-group">
                 <label>Session Name</label>
-                <input type="text" name="session_name" placeholder="e.g. Winter 2026 Mid-Term" required>
+                <input type="text" name="session_name" placeholder="Winter 2026 Mid-Term" required>
             </div>
             <button class="btn btn-blue" style="height: 40px; margin-bottom: 10px;">Create Session</button>
         </form>

@@ -9,11 +9,11 @@
             <form action="{{ url_for('admin.add_teacher') }}" method="POST" class="form-grid" style="grid-template-columns: 1fr 2fr auto;">
                 <div class="form-group">
                     <label>Emp ID</label>
-                    <input type="text" name="prn" required>
+                    <input type="text" name="prn" placeholder="Emp ID" required>
                 </div>
                 <div class="form-group">
                     <label>Full Name</label>
-                    <input type="text" name="name" required>
+                    <input type="text" name="name" placeholder="Full Name" required>
                 </div>
                 <button class="btn btn-blue" style="height: 39px; margin-bottom: 10px;">Add</button>
             </form>

@@ -1,0 +1,25 @@
+{% extends "hod/base.html" %}
+{% block content %}
+<h2 class="page-title">Edit Admin</h2>
+<div class="card" style="max-width: 600px;">
+    <form action="{{ url_for('hod.update_admin', user_id=admin.userID) }}" method="POST">
+        <div class="form-group">
+            <label>Login ID</label>
+            <input type="text" value="{{ admin.prn_empID }}" readonly
+                style="background-color: #e9ecef; cursor: not-allowed; color: #6c757d;">
+        </div>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" name="name" value="{{ admin.name }}" required>
+        </div>
+        <div class="form-group">
+            <label>Reset Password (Leave blank to keep current)</label>
+            <input type="password" name="password" placeholder="New Password">
+        </div>
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-blue">Update Admin</button>
+            <a href="{{ url_for('hod.create_admin') }}" class="btn btn-red">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
