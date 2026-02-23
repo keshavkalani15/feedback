@@ -19,6 +19,10 @@ admin_bp = Blueprint('admin', __name__)
 def dashboard():
     if session.get('role') != 'admin': return redirect(url_for('auth.login'))
     
+    user = User.query.get(session['user_id'])
+    session['user_name'] = user.name
+    session['user_empid'] = user.prn_empID
+    
     # 1. Stats
     stats = {
         'students': User.query.filter_by(role='student').count(),

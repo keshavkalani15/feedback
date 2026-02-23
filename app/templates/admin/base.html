@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,88 +18,264 @@
             --danger-red: #e74c3c;
             --success-green: #2ecc71;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { display: flex; height: 100vh; background-color: var(--bg-body); overflow: hidden; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: var(--bg-body);
+            overflow: hidden;
+        }
 
         /* SIDEBAR */
         .sidebar {
-            width: 260px; background-color: var(--primary-slate); color: white;
-            display: flex; flex-direction: column; padding: 25px;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.05); z-index: 10;
+            width: 260px;
+            background-color: var(--primary-slate);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
+            z-index: 10;
         }
+
         .sidebar h2 {
-            font-size: 1.1rem; text-transform: uppercase; letter-spacing: 2px;
-            margin-bottom: 40px; color: rgba(255,255,255,0.9); text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
         }
+
         .nav-links a {
-            display: flex; align-items: center; justify-content: space-between;
-            color: rgba(255, 255, 255, 0.7); text-decoration: none;
-            padding: 12px 15px; margin-bottom: 8px; border-radius: 6px;
-            transition: all 0.2s ease; font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
         }
-        .nav-links a:hover, .nav-links a.active {
-            background-color: rgba(255, 255, 255, 0.15); color: white; border-left: 4px solid var(--soft-blue);
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-left: 4px solid var(--soft-blue);
         }
-        .logout-btn { margin-top: auto; color: #ff7675 !important; }
+
+        .logout-btn {
+            margin-top: auto;
+            color: #ff7675 !important;
+        }
 
         /* CONTENT AREA */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .main-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
 
         /* CARDS & UTILS */
         .card {
-            background: var(--bg-card); border-radius: 8px; padding: 25px;
-            border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 25px;
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 25px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            margin-bottom: 25px;
         }
-        h2.page-title { color: var(--primary-slate); font-size: 1.4rem; margin-bottom: 20px; font-weight: 600; }
-        h3.card-title { color: var(--primary-slate); font-size: 1.1rem; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+
+        h2.page-title {
+            color: var(--primary-slate);
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        h3.card-title {
+            color: var(--primary-slate);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
 
         /* FORMS & TABLES */
-        input, select {
-            width: 100%; padding: 10px; margin-bottom: 10px;
-            border: 1px solid var(--border-light); border-radius: 6px; background: #fcfcfc;
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            background: #fcfcfc;
         }
-        input:focus, select:focus { border-color: var(--soft-blue); outline: none; background: white; }
 
-        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
-        .btn-blue { background: var(--soft-blue); color: white; text-decoration: none; display: inline-block; text-align: center; }
-        .btn-blue:hover { background: #4a9ecf; }
-        .btn-red { background: var(--danger-red); color: white; text-decoration: none; }
-        .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+        input:focus,
+        select:focus {
+            border-color: var(--soft-blue);
+            outline: none;
+            background: white;
+        }
 
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 10px; table-layout: fixed;}
-        th { text-align: left; padding: 12px; color: var(--text-light); border-bottom: 2px solid #eee; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-        td { padding: 12px; border-bottom: 1px solid #f9f9f9; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .btn-blue {
+            background: var(--soft-blue);
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-blue:hover {
+            background: #4a9ecf;
+        }
+
+        .btn-red {
+            background: var(--danger-red);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            table-layout: fixed;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-light);
+            border-bottom: 2px solid #eee;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f9f9f9;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
 
         /* UNIFIED FORM GRID */
         .form-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px; align-items: end;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: end;
         }
-        .form-group { display: flex; flex-direction: column; }
-        .form-group label { font-size: 0.85rem; color: #64748b; margin-bottom: 5px; font-weight: 500; }
-        .action-btn-group { display: flex; gap: 5px; }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .action-btn-group {
+            display: flex;
+            gap: 5px;
+        }
 
         /* ALERTS */
-        .alert { padding: 15px; margin-bottom: 20px; border-radius: 6px; color: white; }
-        .alert-success { background: var(--success-green); }
-        .alert-danger { background: var(--danger-red); }
-        .alert-warning { background: #f1c40f; color: #333; }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            color: white;
+        }
+
+        .alert-success {
+            background: var(--success-green);
+        }
+
+        .alert-danger {
+            background: var(--danger-red);
+        }
+
+        .alert-warning {
+            background: #f1c40f;
+            color: #333;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="sidebar">
         <h2>Admin Portal</h2>
+        <div
+            style="background: rgba(255, 255, 255, 0.08); padding: 20px; border-radius: 8px; margin-bottom: 40px; border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div
+                style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">
+                <span>Name:&emsp;</span><span style="color: white; font-weight: 500;">{{ session.get('user_name',
+                    'Admin') }}</span>
+            </div>
+            <div
+                style="display: flex; justify-content: space-between; font-size: 0.85rem; color: rgba(255, 255, 255, 0.7);">
+                <span>Admin ID:&emsp;</span><span style="color: white; font-weight: 500;">{{ session.get('user_empid',
+                    '---') }}</span>
+            </div>
+        </div>
         <div class="nav-links">
-            <a href="/admin/dashboard" class="{{ 'active' if request.path == '/admin/dashboard' }}">Dashboard <span>›</span></a>
-            <a href="/admin/manage_sessions" class="{{ 'active' if request.path == '/admin/manage_sessions' }}">Session Control <span>›</span></a>
-            <a href="/admin/allocations" class="{{ 'active' if 'allocation' in request.path }}">Allocate Forms <span>›</span></a>
-            <a href="/admin/manage_subjects" class="{{ 'active' if 'manage_subjects' in request.path }}">Manage Subjects <span>›</span></a>
-            <a href="/admin/manage_teachers" class="{{ 'active' if 'manage_teachers' in request.path }}">Manage Teachers <span>›</span></a>
-            <a href="/admin/assign_class_teacher" class="{{ 'active' if 'assign_class' in request.path }}">Class Teacher <span>›</span></a>
-            <a href="/admin/results" class="{{ 'active' if request.path.startswith('/admin/results') }}">View Results <span>›</span></a>
-            <a href="/admin/promote" class="{{ 'active' if 'promote' in request.path }}">Promote Students <span>›</span></a>
-            <a href="/admin/change_password" class="{{ 'active' if 'password' in request.path }}">Change Password <span>›</span></a>
+            <a href="/admin/dashboard" class="{{ 'active' if request.path == '/admin/dashboard' }}">Dashboard
+                <span>›</span></a>
+            <a href="/admin/manage_sessions" class="{{ 'active' if request.path == '/admin/manage_sessions' }}">Session
+                Control <span>›</span></a>
+            <a href="/admin/allocations" class="{{ 'active' if 'allocation' in request.path }}">Allocate Forms
+                <span>›</span></a>
+            <a href="/admin/manage_subjects" class="{{ 'active' if 'manage_subjects' in request.path }}">Manage Subjects
+                <span>›</span></a>
+            <a href="/admin/manage_teachers" class="{{ 'active' if 'manage_teachers' in request.path }}">Manage Teachers
+                <span>›</span></a>
+            <a href="/admin/assign_class_teacher" class="{{ 'active' if 'assign_class' in request.path }}">Class Teacher
+                <span>›</span></a>
+            <a href="/admin/results" class="{{ 'active' if request.path.startswith('/admin/results') }}">View Results
+                <span>›</span></a>
+            <a href="/admin/promote" class="{{ 'active' if 'promote' in request.path }}">Promote Students
+                <span>›</span></a>
+            <a href="/admin/change_password" class="{{ 'active' if 'password' in request.path }}">Change Password
+                <span>›</span></a>
             <a href="/logout" class="logout-btn">Logout <span>⏻</span></a>
         </div>
     </div>
@@ -106,16 +283,17 @@
     <div class="main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div id="flash-messages">
-                {% for category, message in messages %}
-                <div class="alert alert-{{ category }}" style="padding: 15px; margin-bottom: 20px; border-radius: 6px; 
+        <div id="flash-messages">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="padding: 15px; margin-bottom: 20px; border-radius: 6px; 
                     background-color: {{ '#f8d7da' if category == 'danger' else '#d4edda' }}; 
                     color: {{ '#721c24' if category == 'danger' else '#155724' }}; transition: opacity 0.5s ease;">
-                    {{ message }}
-                    <span style="float: right; cursor: pointer; font-weight: bold;" onclick="this.parentElement.style.display='none';">&times;</span>
-                </div>
-                {% endfor %}
+                {{ message }}
+                <span style="float: right; cursor: pointer; font-weight: bold;"
+                    onclick="this.parentElement.style.display='none';">&times;</span>
             </div>
+            {% endfor %}
+        </div>
         {% endif %}
         {% endwith %}
 
@@ -125,20 +303,20 @@
 </body>
 <script>
     // GLOBAL SEARCH & PAGINATION SCRIPT
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
 
-        setTimeout(function() {
-                var flashContainer = document.getElementById('flash-messages');
-                if (flashContainer) {
-                    // 1. Fade it out
-                    flashContainer.style.opacity = "0";
-                    
-                    // 2. Remove it entirely from the screen 0.5 seconds later (after the fade animation finishes)
-                    setTimeout(function() {
-                        flashContainer.style.display = "none";
-                    }, 500);
-                }
-            }, 5000);
+        setTimeout(function () {
+            var flashContainer = document.getElementById('flash-messages');
+            if (flashContainer) {
+                // 1. Fade it out
+                flashContainer.style.opacity = "0";
+
+                // 2. Remove it entirely from the screen 0.5 seconds later (after the fade animation finishes)
+                setTimeout(function () {
+                    flashContainer.style.display = "none";
+                }, 500);
+            }
+        }, 5000);
 
         const rowsPerPage = 10;
         const tables = document.querySelectorAll(".paginated-table");
@@ -148,9 +326,9 @@
             const rows = Array.from(tbody.querySelectorAll("tr"));
             const searchInput = document.getElementById(table.dataset.searchId);
             const paginationContainer = document.getElementById(table.dataset.paginationId);
-            
+
             let currentPage = 1;
-            let filteredRows = rows; 
+            let filteredRows = rows;
 
             function displayRows() {
                 rows.forEach(row => row.style.display = "none");
@@ -173,24 +351,24 @@
                     return btn;
                 };
 
-                paginationContainer.appendChild(createBtn("«", currentPage === 1, () => { 
-                    if(currentPage > 1) { currentPage--; displayRows(); } 
+                paginationContainer.appendChild(createBtn("«", currentPage === 1, () => {
+                    if (currentPage > 1) { currentPage--; displayRows(); }
                 }));
 
                 const span = document.createElement("span");
                 span.innerText = ` Page ${currentPage} of ${pageCount || 1} `;
                 paginationContainer.appendChild(span);
 
-                paginationContainer.appendChild(createBtn("»", currentPage === pageCount || pageCount === 0, () => { 
-                    if(currentPage < pageCount) { currentPage++; displayRows(); } 
+                paginationContainer.appendChild(createBtn("»", currentPage === pageCount || pageCount === 0, () => {
+                    if (currentPage < pageCount) { currentPage++; displayRows(); }
                 }));
             }
 
             if (searchInput) {
-                searchInput.addEventListener("keyup", function() {
+                searchInput.addEventListener("keyup", function () {
                     const query = this.value.toLowerCase();
                     filteredRows = rows.filter(row => row.innerText.toLowerCase().includes(query));
-                    currentPage = 1; 
+                    currentPage = 1;
                     displayRows();
                 });
             }
@@ -198,4 +376,5 @@
         });
     });
 </script>
+
 </html>

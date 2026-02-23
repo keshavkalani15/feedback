@@ -21,7 +21,9 @@ def login():
         if user and check_password_hash(user.password, password): 
             session['user_id'] = user.userID
             session['role'] = user.role
-            session['name'] = user.prn_empID 
+            session['name'] = user.prn_empID
+            session['user_name'] = user.name
+            session['user_empid'] = user.prn_empID
             
             if role == 'student': 
                 return redirect(url_for('student.student_dashboard'))
@@ -48,7 +50,9 @@ def management_login():
         if user and check_password_hash(user.password, password): 
             session['user_id'] = user.userID
             session['role'] = user.role
-            session['name'] = user.prn_empID 
+            session['name'] = user.prn_empID
+            session['user_name'] = user.name
+            session['user_empid'] = user.prn_empID
             return redirect(url_for('hod.dashboard'))
             
         return render_template('management_login.html', error="Invalid Credentials")
