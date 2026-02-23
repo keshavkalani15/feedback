@@ -1,5 +1,6 @@
 from app import create_app, db
 from run import create_database_if_not_exists
+from create_hod import create_hod_account
 from waitress import serve
 import sys
 import logging
@@ -22,6 +23,7 @@ def start_production_server():
         try:
             db.create_all()
             print("✅ Database tables checked/created.")
+            create_hod_account()
         except Exception as e:
             print(f"❌ Error creating tables: {e}")
             sys.exit(1)

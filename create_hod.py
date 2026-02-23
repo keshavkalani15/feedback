@@ -2,10 +2,7 @@ from app import create_app
 from app.models import db, User
 from werkzeug.security import generate_password_hash
 
-# Initialize the Flask app so we can talk to the database
-app = create_app()
-
-with app.app_context():
+def create_hod_account():
     # 1. Check if the HOD already exists so we don't accidentally create duplicates
     existing_hod = User.query.filter_by(prn_empID='HOD123', role='HOD').first()
     
@@ -31,3 +28,9 @@ with app.app_context():
         except Exception as e:
             db.session.rollback()
             print(f"❌ Error creating HOD: {e}")
+
+if __name__ == '__main__':
+    # Initialize the Flask app so we can talk to the database
+    app = create_app()
+    with app.app_context():
+        create_hod_account()
