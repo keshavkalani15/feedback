@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Portal</title>
+    <style>
+        /* =========================================
+           SHARED THEME (Matches Admin/Teacher)
+           ========================================= */
+        :root {
+            --primary-slate: #34495e;
+            --soft-blue: #5dade2;
+            --text-main: #2c3e50;
+            --text-light: #7f8c8d;
+            --bg-body: #f5f7fa;
+            --bg-card: #ffffff;
+            --border-light: #e0e6ed;
+            --danger-red: #e74c3c;
+            --success-green: #2ecc71;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { display: flex; height: 100vh; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
+
+        /* =========================================
+           SIDEBAR
+           ========================================= */
+        .sidebar {
+            width: 260px; min-width: 260px;
+            background-color: var(--primary-slate); color: white;
+            display: flex; flex-direction: column; padding: 30px;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.05); z-index: 10;
+        }
+        .sidebar h2 { text-align: center; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 40px; font-weight: 600; opacity: 0.9; }
+        .nav-links a { display: flex; justify-content: space-between; color: rgba(255,255,255,0.7); text-decoration: none; padding: 12px 15px; margin-bottom: 8px; border-radius: 6px; transition: 0.2s; font-size: 0.95rem; }
+        .nav-links a:hover, .nav-links a.active { background-color: rgba(255,255,255,0.1); color: white; }
+        .logout-btn { margin-top: auto; color: #ff7675 !important; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+
+        /* =========================================
+           MAIN CONTENT & TOP BAR
+           ========================================= */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .top-bar {
+            background: white; padding: 15px 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+
+        .scrollable-content { flex: 1; padding: 40px; overflow-y: auto; background-color: var(--bg-body); }
+
+        /* =========================================
+           UI COMPONENTS (Cards, Tables, Buttons)
+           ========================================= */
+        .page-title { color: var(--primary-slate); font-size: 1.4rem; font-weight: 600; margin-bottom: 20px;}
+        
+        .card { background: var(--bg-card); padding: 25px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 25px; border: 1px solid var(--border-light); }
+        .card-title { color: var(--primary-slate); font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px; }
+
+        .btn { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; text-decoration: none; display: inline-block; }
+        .btn-blue { background: var(--soft-blue); color: white; }
+        .btn-blue:hover { background: #4a9ecf; transform: translateY(-1px); }
+        .btn-red { background: var(--danger-red); color: white; }
+        .btn-red:hover { background: #c0392b; transform: translateY(-1px); }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; padding: 12px; color: #7f8c8d; border-bottom: 2px solid #eee; background: #fdfdfd; font-size: 0.9rem; text-transform: uppercase; }
+        td { padding: 15px 12px; border-bottom: 1px solid #f9f9f9; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #7f8c8d; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid var(--border-light); border-radius: 6px; font-size: 0.95rem; }
+        input:focus, select:focus { outline: none; border-color: var(--soft-blue); box-shadow: 0 0 0 3px rgba(93, 173, 226, 0.1); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Management</h2>
+        <div class="nav-links">
+            <a href="/hod/dashboard" class="{{ 'active' if 'dashboard' in request.path }}">Dashboard <span>›</span></a>
+            <a href="/hod/results" class="{{ 'active' if 'results' in request.path }}">View Results <span>›</span></a>
+            <a href="/hod/change_password" class="{{ 'active' if 'password' in request.path }}">Security <span>›</span></a>
+            <a href="/logout" class="logout-btn">Logout <span>⏻</span></a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div style="font-weight: 600; color: var(--primary-slate);">HOD Portal</div>
+            {% block header_stats %}{% endblock %}
+        </div>
+
+        <div class="scrollable-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div style="padding: 15px; margin-bottom: 20px; border-radius: 6px; border: 1px solid transparent; 
+                              {% if category == 'success' %} background-color: #dcfce7; color: #166534; border-color: #bbf7d0;
+                              {% elif category == 'danger' %} background-color: #fee2e2; color: #991b1b; border-color: #fecaca;
+                              {% else %} background-color: #fef9c3; color: #854d0e; border-color: #fef08a; {% endif %}">
+                    {{ message }}
+                    <span style="float: right; cursor: pointer; font-weight: bold;" onclick="this.parentElement.style.display='none';">&times;</span>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+</body>
+</html>

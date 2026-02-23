@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+{% block content %}
+    <h2 class="page-title">Results Archive</h2>
+    <div style="margin-bottom: 20px;">
+        <input type="text" id="sessionSearch" placeholder="Search Session Name or ID..." 
+               style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+    </div>
+
+    <div style="display: grid; gap: 12px;">
+        {% for s in sessions %}
+        <div class="card session-card" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between; 
+            border-left: 3px solid 
+            {% if s.status == 1 %}#2ecc71{% elif s.status == 0 %}#f1c40f{% else %}#696969{% endif %}; padding: 10px 20px;">
+            
+            <div>
+                <h3 class="s-name" style="margin: 0; font-size: 1.1rem;">{{ s.sessionName }}</h3>
+                <span class="s-id" style="font-size: 0.8rem; color: #94a3b8;">#{{ s.sessionID }}</span>
+                
+                <span style="font-size: 0.7rem; font-weight: bold; margin-left: 10px; color: #94a3b8;">
+                    {% if s.status == 1 %}ACTIVE{% elif s.status == 0 %}STOPPED{% else %}TERMINATED{% endif %}
+                </span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <span style="font-weight: 600; font-size: 0.9rem;">Allocations: {{ s.alloc_count }}</span>
+                <a href="{{ url_for('admin.session_teachers', session_id=s.sessionID) }}" class="btn btn-blue btn-sm" style="height: 25px; padding-bottom: 23px;">View Teachers ➔</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.getElementById('sessionSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll('.session-card').forEach(card => {
+                card.style.display = card.innerText.toLowerCase().includes(filter) ? 'flex' : 'none';
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof reportData !== 'undefined' && reportData.length > 0) {
+                loadSubject(0); 
+            } else {
+                document.getElementById('empty-state').innerHTML = "<h3>No feedback responses found for this teacher in this session.</h3>";
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+{% block content %}
+<h2 class="page-title">Edit Class Guardian</h2>
+<div class="card" style="max-width: 600px;">
+    <form action="{{ url_for('admin.edit_class_teacher', assign_id=assignment.id) }}" method="POST">
+        
+        <label>Teacher (Emp ID)</label>
+        <input list="teachers_list" name="teacher_emp_id" value="{{ assignment.teacher.prn_empID }}" required>
+        <datalist id="teachers_list">
+            {% for t in teachers %}
+                <option value="{{ t.prn_empID }}">{{ t.name }}</option>
+            {% endfor %}
+        </datalist>
+        
+        <div style="display: flex; gap: 10px;">
+            <div style="flex:1;">
+                <label>Semester</label>
+                <select name="semester">
+                    {% for i in range(1,9) %}
+                    <option value="{{ i }}" {{ 'selected' if i == assignment.semester else '' }}>{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="flex:1;">
+                <label>Division</label>
+                <input type="text" name="division" value="{{ assignment.division }}" required>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button type="submit" class="btn btn-blue">Update Assignment</button>
+            <a href="/admin/assign_class_teacher" class="btn btn-red" style="text-decoration: none;">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

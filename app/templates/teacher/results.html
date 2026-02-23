@@ -1,0 +1,75 @@
+{% extends "teacher/base.html" %}
+
+{% block content %}
+    <h2 class="page-title">Feedback Results Archive</h2>
+
+    <div style="margin-bottom: 20px;">
+        <input type="text" id="sessionSearch" placeholder="Search by Session Name or ID..." 
+               style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem;">
+    </div>
+
+    {% if sessions %}
+        <div style="display: grid; gap: 10px;">
+            {% for s in sessions %}
+            <div class="card session-card" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; 
+                 border-left: 5px solid {% if s.status == 1 %}#2ecc71{% else %}#95a5a6{% endif %};
+                 {% if s.status == 2 %}background: #fafafa;{% endif %}">
+                
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <h3 class="s-name" style="margin: 0; color: var(--primary-slate); font-size: 1.05rem;">{{ s.name }}</h3>
+                    <span class="s-id" style="font-size: 0.8rem; color: #94a3b8;">#{{ s.id }}</span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 25px;">
+                    
+                    <div style="font-size: 0.95rem; font-weight: 600; color: var(--primary-slate);">
+                        Allocated Subjects: <span style="color: var(--soft-blue);">{{ s.count }}</span>
+                    </div>
+
+                    {% if s.status == 1 %}
+                        <span style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">ACTIVE</span>
+                    {% else %}
+                        <span style="background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold;">CLOSED</span>
+                    {% endif %}
+
+                    <a href="{{ url_for('teacher.session_report', session_id=s.id) }}" class="btn btn-blue btn-sm" style="padding: 5px 12px; text-decoration: none;">
+                        Report ➔
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <div id="no-results" style="display: none; text-align: center; padding: 20px; color: #999;">
+                No matching sessions found.
+            </div>
+        </div>
+    {% else %}
+        <div class="card" style="text-align: center; padding: 60px; border: 2px dashed #e0e6ed;">
+            <p style="color: #95a5a6;">No feedback sessions found.</p>
+        </div>
+    {% endif %}
+    
+    <script>
+        document.getElementById('sessionSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let cards = document.querySelectorAll('.session-card');
+            let hasVisible = false;
+
+            cards.forEach(card => {
+                let name = card.querySelector('.s-name').innerText.toLowerCase();
+                let id = card.querySelector('.s-id').innerText.toLowerCase();
+
+                // Check if Name OR ID matches the search query
+                if (name.includes(filter) || id.includes(filter)) {
+                    card.style.display = 'flex'; // Show match
+                    hasVisible = true;
+                } else {
+                    card.style.display = 'none'; // Hide mismatch
+                }
+            });
+
+            // Show "No Results" message if everything is hidden
+            document.getElementById('no-results').style.display = hasVisible ? 'none' : 'block';
+        });
+    </script>
+{% endblock %}

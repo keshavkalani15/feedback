@@ -1,0 +1,202 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<h2 class="page-title">Allocate Feedback Forms</h2>
+
+<div class="card">
+    <h3 class="card-title">➕ Assign Form to Teacher</h3>
+    
+    <form action="{{ url_for('admin.allocations') }}" method="POST" class="form-grid" style="grid-template-columns: 1fr 1fr 0.5fr 1.5fr 0.5fr 0.5fr auto;">
+        
+        <div class="form-group">
+            <label>Session</label>
+            <select name="session_id" required>
+                {% for s in sessions %}
+                    <option value="{{ s.sessionID }}">{{ s.sessionName }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Teacher</label>
+            <input list="teachers_list" name="teacher_emp_id" placeholder="Search ID or Name..." required>
+            <datalist id="teachers_list">
+                {% for t in teachers %} 
+                    <option value="{{ t.prn_empID }} - {{ t.name }}"></option> 
+                {% endfor %}
+            </datalist>
+        </div>
+
+        <div class="form-group" id="semGroup">
+            <label>Sem</label>
+            <select name="semester" id="semSelect" onchange="fetchSubjects()" required>
+                <option value="" disabled selected>-</option>
+                {% for i in range(1,9) %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Subject (Filtered by Sem)</label>
+            <input list="subjects_list" name="subject_id_input" id="subjectInput" onchange="checkElective()" placeholder="Select Sem First..." required disabled>
+            <datalist id="subjects_list">
+                </datalist>
+        </div>
+
+        <div class="form-group">
+            <label>Div</label>
+            <select name="division_select" id="divSelect">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            </select>
+            <input type="text" name="division_manual" id="divManual" placeholder="e.g. E1" style="display: none;">
+        </div>
+
+        <div class="form-group">
+            <label>Batch</label>
+            <select name="batch_select" id="batchSelect">
+                <option value="All">All</option>
+                <option value="P">P</option><option value="Q">Q</option><option value="R">R</option>
+            </select>
+            <input type="text" name="batch_manual" id="batchManual" placeholder="e.g. All" style="display: none;">
+        </div>
+
+        <button type="submit" class="btn btn-blue" style="height: 40px; margin-bottom: 10px;">Allocate</button>
+    </form>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 class="card-title">Allocated Forms</h3>
+        <input type="text" id="searchAlloc" placeholder="Search Teacher, Subject..." style="width: 400px; padding: 6px;">
+    </div>
+
+    <table class="paginated-table" data-search-id="searchAlloc" data-pagination-id="pagiAlloc">
+        <thead>
+            <tr>
+                <th style="width: 4%;">ID</th>
+                <th style="width: 8%;">Session</th>
+                <th style="width: 15%;">Teacher</th>
+                <th style="width: 35%;">Subject</th>
+                <th style="width: 12%;">Target Class</th>
+                <th style="width: 10%;">Progress</th>
+                <th style="width: 10%;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in allocations %}
+            {% set a = item.obj %}
+            <tr>
+                <td style="color: #999;">{{ a.allocationID }}</td>
+                <td>{{ a.sessionID }}</td>
+                <td><strong style="color: var(--primary-slate);">{{ a.teacher.name }}</strong></td>
+                <td>
+                    {{ a.subject.subjectName }}
+                    <span style="font-size: 0.8rem; color: #666;">({{ a.subject.subjectType }})</span>
+                    {% if item.is_elective %}
+                        <span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">ELEC</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.is_elective %}
+                        Batch {{ a.targetDivision }} ({{ a.targetBatch }})
+                    {% else %}
+                        Sem {{ a.targetSemester }} - {{ a.targetDivision }} ({{ a.targetBatch }})
+                    {% endif %}
+                </td>
+                <td>
+                    <span style="font-weight: bold; color: {{ 'green' if item.submitted == item.total and item.total > 0 else '#2c3e50' }}">
+                        {{ item.submitted }} / {{ item.total }}
+                    </span>
+                </td>
+                <td>
+                    <form action="{{ url_for('admin.delete_allocation', alloc_id=a.allocationID) }}" method="POST" onsubmit="return confirm('Delete this allocation?');">
+                        <button class="btn btn-red btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div id="pagiAlloc" style="margin-top: 15px; text-align: right;"></div>
+</div>
+
+<script>
+// --- 1. NEW DYNAMIC FETCHING LOGIC ---
+function fetchSubjects() {
+    var sem = document.getElementById('semSelect').value;
+    var datalist = document.getElementById('subjects_list');
+    var subjectInput = document.getElementById('subjectInput');
+
+    // Reset input and datalist
+    subjectInput.value = ''; 
+    subjectInput.placeholder = "Loading subjects...";
+    subjectInput.disabled = true;
+    datalist.innerHTML = ''; 
+
+    if (sem) {
+        fetch('/admin/api/subjects/' + sem)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(sub => {
+                    var option = document.createElement('option');
+                    var typeStr = sub.subjectType.substring(0, 2);
+                    var elecStr = sub.is_elective ? '(E)' : '';
+                    option.value = sub.subjectID + ' - ' + sub.subjectName + ' - ' + typeStr + ' ' + elecStr;
+                    option.setAttribute('data-elective', sub.is_elective ? 'yes' : 'no');
+                    datalist.appendChild(option);
+                });
+                
+                // Re-enable the input once loaded
+                subjectInput.placeholder = "Search Subject Name or ID...";
+                subjectInput.disabled = false;
+                
+                // If it's an elective change, reset the manual boxes
+                checkElective();
+            });
+    }
+}
+
+// --- 2. UPDATED ELECTIVE LOGIC ---
+function checkElective() {
+    var input = document.getElementById('subjectInput');
+    var list = document.getElementById('subjects_list');
+    var isElective = false;
+
+    for (var i = 0; i < list.options.length; i++) {
+        if (list.options[i].value === input.value) {
+            isElective = list.options[i].getAttribute('data-elective') === 'yes';
+            break;
+        }
+    }
+
+    var divSelect = document.getElementById('divSelect');
+    var divManual = document.getElementById('divManual');
+    var batchSelect = document.getElementById('batchSelect');
+    var batchManual = document.getElementById('batchManual');
+
+    // We no longer hide 'semGroup' here, because we need it to filter the subjects!
+    
+    if (isElective) {
+        divSelect.style.display = 'none';
+        divManual.style.display = 'block';
+        divManual.required = true;
+        divSelect.required = false;
+
+        batchSelect.style.display = 'none';
+        batchManual.style.display = 'block';
+        batchManual.value = 'All'; 
+        batchManual.required = true;
+        batchSelect.required = false;
+    } else {
+        divSelect.style.display = 'block';
+        divManual.style.display = 'none';
+        divManual.required = false;
+        divSelect.required = true;
+
+        batchSelect.style.display = 'block';
+        batchManual.style.display = 'none';
+        batchManual.required = false;
+        batchSelect.required = true;
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,31 @@
+ID,Name,Type,Elective,Semester
+310251,Data Science and Big Data Analytics,Theory,No,6
+310252,Web Technology ,Theory,No,6
+310253,Artificial Intelligence,Theory,No,6
+3102541,Information Security,Theory,Yes,6
+3102542,Augmented and Virtual Reality,Theory,Yes,6
+3102543,Cloud Computing,Theory,Yes,6
+3102544,Software Modeling and Architectures,Theory,Yes,6
+310256,Data Science and Big Data Analytics Laboratory,Practical,No,6
+310257,Web Technology Laboratory,Practical,No,6
+310258,LP II - Artificial Intelligence,Practical,No,6
+3102545,Information Security,Practical,Yes,6
+3102546,Augmented and Virtual Reality,Practical,Yes,6
+3102547,Cloud Computing,Practical,Yes,6
+3102548,Software Modeling and Architectures,Practical,Yes,6
+,,,,
+310241,Database Management Systems,Theory,No,5
+310242,Theory of Computation,Theory,No,5
+310243,Systems Programming and Operating System,Theory,No,5
+310244,Computer Networks and Security,Theory,No,5
+3102451,Internet of Things and Embedded Systems,Theory,Yes,5
+3102452,Human Computer Interface,Theory,Yes,5
+3102453,Distributed Systems,Theory,Yes,5
+3102454,Software Project Management,Theory,Yes,5
+310246,Database Management Systems Laboratory,Practical,No,5
+310247,Computer Networks and Security Laboratory,Practical,No,5
+310248,LP I - Systems Programming and Operating System,Practical,No,5
+3102455,Internet of Things and Embedded Systems,Practical,Yes,5
+3102456,Human Computer Interface,Practical,Yes,5
+3102457,Distributed Systems,Practical,Yes,5
+3102458,Software Project Management,Practical,Yes,5

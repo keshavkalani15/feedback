@@ -1,0 +1,51 @@
+{% extends "hod/base.html" %}
+{% block content %}
+    <h2 class="page-title">Feedback Results Analysis</h2>
+    
+    {% if session %}
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="teacherSearch" placeholder="Search by Teacher, Subject, or ID..." 
+                   style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+        </div>
+
+        <div class="card">
+            <h3 class="card-title">Live Session: {{ session.sessionName }}</h3>
+            <table class="paginated-table" id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Teacher</th>
+                        <th>Subject</th>
+                        <th>Class</th>
+                        <th>Avg Score (10.0)</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    {% for r in results %}
+                    <tr class="result-row">
+                        <td><strong>{{ r.teacher }}</strong></td>
+                        <td>{{ r.subject }}</td>
+                        <td>{{ r.class }}</td>
+                        <td><strong style="color: {{ 'green' if r.score >= 8 else 'orange' if r.score >= 5 else 'red' }}">{{ r.score }}</strong></td>
+                        <td>
+                            <a href="/hod/results/report/{{ session.sessionID }}/{{ r.teacher_id }}" class="btn btn-blue btn-sm">Full Analytics ➔</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">No Active Session to show results for.</div>
+    {% endif %}
+
+    <script>
+        document.getElementById('teacherSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let rows = document.querySelectorAll('.result-row');
+            rows.forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+{% endblock %}

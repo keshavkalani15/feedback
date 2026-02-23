@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Report - {{ curr_session.sessionName }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --primary-slate: #2c3e50;
+            --soft-blue: #3498db;
+            --bg-body: #f4f7f6;
+            --text-main: #34495e;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; 
+        }
+
+        /* --- HEADER --- */
+        .report-header {
+            background: white; padding: 15px 30px;
+            border-bottom: 1px solid #ddd;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .header-title h2 { margin: 0; font-size: 1.4rem; color: var(--primary-slate); }
+        .header-title span { font-size: 0.9rem; color: #7f8c8d; }
+        .header-actions { display: flex; gap: 10px; }
+        
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-back { background: #ecf0f1; color: #7f8c8d; }
+
+        /* --- MAIN LAYOUT --- */
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* LEFT MENU */
+        .subject-sidebar {
+            width: 300px; background: #fff;
+            border-right: 1px solid #ddd;
+            display: flex; flex-direction: column;
+        }
+        .search-container { padding: 15px; border-bottom: 1px solid #eee; }
+        .search-box { width: 94%; padding: 10px; border: 1px solid #eee; border-radius: 6px; background: #f9f9f9; }
+        .subject-list { flex: 1; overflow-y: auto; padding: 10px; }
+        
+        .sub-card {
+            padding: 15px; margin-bottom: 8px; border-radius: 8px; cursor: pointer;
+            border: 1px solid transparent; transition: 0.2s;
+        }
+        .sub-card:hover { background: #f8f9fa; }
+        .sub-card.active { background: #ebf5fb; border-color: #aed6f1; border-left: 4px solid var(--soft-blue); }
+        .sub-name { font-weight: 700; font-size: 0.95rem; display: block; }
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-top: 5px; }
+        .badge-theory { background: #fdf2f2; color: #c0392b; }
+        .badge-practical { background: #e8f8f5; color: #16a085; }
+
+        /* RIGHT CONTENT */
+        .report-view { flex: 1; padding: 30px; overflow-y: auto; background: #f4f7f6; }
+        
+        /* CHART CONTAINER FIX */
+        .stats-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .chart-wrapper { position: relative; height: 300px; width: 100%; }
+        .pie-wrapper { position: relative; height: 200px; width: 100%; display: flex; justify-content: center; }
+
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); border: 1px solid #e0e6ed; }
+
+        .tab-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            background: white; border: 1px solid #ddd; padding: 8px 15px;
+            border-radius: 20px; cursor: pointer; color: #666; font-weight: 600; font-size: 0.9rem; transition: 0.2s;
+        }
+        .tab-btn:hover { background: #f2f2f2; }
+        .tab-btn.active { background: var(--soft-blue); color: white; border-color: var(--soft-blue); }
+
+        /* Questions List */
+        .q-item { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #eee; }
+        .q-header { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 500; }
+        .bar-bg { background: #ecf0f1; height: 10px; border-radius: 5px; overflow: hidden; width: 100%; }
+        .bar-fill { height: 100%; transition: width 0.6s ease; }
+
+        .subject-type-label{color: #64748b; font-size: 1rem;}
+
+        /* PRINT STYLES */
+        @media print {
+            @page { size: A4; margin: 15mm; }
+            .subject-sidebar, .btn, .search-container, .header-actions { display: none !important; }
+            body, .main-container, .report-view { height: auto !important; overflow: visible !important; background: white !important; display: block !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .report-view { zoom: 75%; }
+            .report-header { box-shadow: none !important; border-bottom: 2px solid #333 !important; padding: 10px 0 !important; }
+            .card { box-shadow: none !important; border: 1px solid #ccc !important; break-inside: avoid; margin-bottom: 20px; }
+            .stats-grid { display: grid !important; grid-template-columns: 1.8fr 1fr !important; gap: 20px; break-inside: avoid; }
+            .chart-wrapper { height: 250px !important; }
+            .pie-wrapper { height: 200px !important; }
+            .bar-fill, .tab-btn.active, .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #disp-title { margin-top: 30px !important; font-size: 2.5rem !important; }
+            .subject-type-label{color: #64748b; font-size: 1.5rem;}
+            #disp-id { font-size: 1.2rem !important; margin-bottom: 20px !important; display: block; }
+            #auth-bar-container form, #auth-bar-container button { display: none !important; } /* Hide buttons on physical print */
+            #comments-print-section {
+                page-break-before: always; /* For older browsers */
+                break-before: page;        /* Modern standard */
+                margin-top: 0 !important;  /* Removes the top margin so it sits flush at the top of the new page */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="report-header">
+        <div class="header-title">
+            <h2>{{ curr_session.sessionID }} - {{ curr_session.sessionName }}</h2>
+            <span>Feedback Analysis Report - Teacher View</span>
+        </div>
+        <div class="header-actions">
+            <a href="/teacher/results" class="btn btn-back">← Back</a>
+            </div>
+    </div>
+
+    <div class="main-container">
+        
+        <div class="subject-sidebar">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-box" placeholder="Search Subject..." onkeyup="filterSubjects()">
+            </div>
+            <div class="subject-list" id="subjectList">
+                {% for r in reports %}
+                <div class="sub-card" onclick="loadSubject({{ loop.index0 }})" id="card-{{ loop.index0 }}">
+                    <span class="sub-name">{{ r.subject.subjectName }}</span>
+                    <span class="sub-meta" style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ r.subject.subjectID }}</span>
+                    &nbsp;
+                    <span class="badge badge-{{ r.subject.subjectType|lower }}" style="font-size: 12px;">
+                        {{ 'Lab' if r.subject.subjectType == 'Practical' else 'Theory' }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="report-view">
+            <div id="empty-state" style="text-align: center; color: #999; margin-top: 100px;">
+                <h3>Select a subject to view analytics.</h3>
+            </div>
+
+            <div id="report-content" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 15px;">
+                    <div>
+                        <h2 style="margin: 0; color: var(--primary-slate);" id="disp-title">Subject</h2>
+                        <span id="disp-id" style="color: #7f8c8d; font-size: 0.9rem;"></span> 
+                    </div>
+                    <span id="disp-responses" style="font-weight: bold; color: #7f8c8d;">0 Responses</span>
+                </div>
+
+                <div class="tab-bar" id="tabs-container"></div>
+                
+                <div id="auth-bar-container"></div>
+
+                <div class="stats-grid">
+                    <div class="card">
+                        <h4 style="margin-top: 0; color: #7f8c8d;">Question Performance (1-10)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card" style="text-align: center;">
+                        <h4 style="margin-top: 0; color: #7f8c8d;">Overall Rating</h4>
+                        <div class="pie-wrapper">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <h1 id="big-score" style="margin: 10px 0 0 0; font-size: 2.5rem; color: var(--primary-slate);">0.0</h1>
+                        <span style="color: #999; font-size: 0.9rem;">Average (Out of 10)</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h4 style="margin-top: 0; margin-bottom: 20px; color: #7f8c8d;">Detailed Breakdown</h4>
+                    <div id="questions-list"></div>
+                </div>
+
+                <div class="card" id="comments-print-section" style="margin-top: 25px;">
+                    <h3 class="card-title" style="margin-bottom: 20px;">
+                        💬 Anonymous Student Comments 
+                        <span id="comment-badge" style="font-size: 0.8rem; font-weight: normal; color: #64748b; margin-left: 10px;">
+                            (0 total)
+                        </span>
+                    </h3>
+                    <div id="comments-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 10px; max-height: 500px; overflow-y: auto; padding: 10px;">
+                        </div>
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const reportData = {{ reports | tojson }};
+        const approvalData = {{ approval_dict | default({}) | tojson }}; // Pulls in database signatures
+        const currentSessionId = "{{ curr_session.sessionID }}"; // Pulls session ID
+        
+        let myBarChart = null;
+        let myPieChart = null;
+
+        if(reportData.length > 0) loadSubject(0);
+
+        function loadSubject(index) {
+            document.querySelectorAll('.sub-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`card-${index}`).classList.add('active');
+
+            document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('report-content').style.display = 'block';
+
+            const data = reportData[index];
+            const typeLabel = data.subject.subjectType === 'Practical' ? 'Lab' : 'Theory';
+            const electiveLabel = data.subject.is_elective ? 'Elective' : 'Core';
+ 
+            document.getElementById('disp-title').innerHTML = `${data.subject.subjectName} <span class="subject-type-label"> &ensp; ${typeLabel} (${electiveLabel})</span>`;
+            document.getElementById('disp-id').innerText = "Subject ID: " + data.subject.subjectID;
+
+            const tabContainer = document.getElementById('tabs-container');
+            tabContainer.innerHTML = '';
+            
+            data.tabs.forEach((tab, i) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${i===0 ? 'active' : ''}`;
+                
+                // Replace "Sem 0" with "Elec" for better readability
+                let displayLabel = tab.label.replace("Sem 0", "Elec");
+
+                btn.innerText = displayLabel;
+                btn.onclick = () => loadStats(index, i);
+                tabContainer.appendChild(btn);
+            });
+
+            loadStats(index, 0);
+        }
+        
+        function loadStats(subIndex, tabIndex) {
+            const subData = reportData[subIndex];
+            const tabData = subData.tabs[tabIndex];
+            const questions = subData.questions;
+
+            // Update Tab active state
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', i === tabIndex);
+            });
+            document.getElementById('disp-responses').innerText = `${tabData.count} Responses`;
+
+            // ===============================================
+            // INJECT AUTHORIZATION BAR DYNAMICALLY
+            // ===============================================
+            const subjectId = subData.subject.subjectID;
+            const allocId = tabData.id; 
+            const approvalKey = `${subjectId}_${allocId}`;
+            const approval = approvalData[approvalKey] || { teacher_agreed: false, hod_approved: false };
+
+            let authHtml = `
+                <div style="margin-bottom: 25px; padding: 15px 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <span style="font-weight: 700; color: #475569; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px;">Authorization:</span>
+            `;
+
+            if (approval.teacher_agreed) {
+                authHtml += `<span style="color: #16a085; font-weight: bold; font-size: 0.95rem;">✅ Agreed by Teacher</span>`;
+            } else {
+                authHtml += `<span style="color: #94a3b8; font-style: italic; font-size: 0.95rem;">⏳ Teacher Signature Pending</span>`;
+            }
+
+            if (approval.hod_approved) {
+                authHtml += `<span style="color: #27ae60; font-weight: bold; font-size: 0.95rem;">✅ Approved by HOD</span>`;
+            } else {
+                authHtml += `<span style="color: #94a3b8; font-style: italic; font-size: 0.95rem;">⏳ HOD Approval Pending</span>`;
+            }
+
+            authHtml += `</div><div style="display: flex; gap: 10px;">`;
+
+            // Draw "I Agree" Form if teacher hasn't agreed
+            // Draw "I Agree" Form if teacher hasn't agreed
+            if (!approval.teacher_agreed) {
+                authHtml += `
+                    <form action="/teacher/agree_report" method="POST" style="margin: 0;" onsubmit="return confirm('By agreeing, you digitally sign this report. This cannot be undone. Proceed?');">
+                        <input type="hidden" name="session_id" value="${currentSessionId}">
+                        <input type="hidden" name="subject_id" value="${subjectId}">
+                        <input type="hidden" name="allocation_id" value="${allocId}">
+                        <button type="submit" class="btn" style="background: #0284c7; color: white; padding: 8px 16px;">✍️ I Agree</button>
+                    </form>
+                `;
+            }
+
+            // THE PRINT BUTTON: Now appears on ANY tab as long as both parties have signed!
+            if (approval.teacher_agreed && approval.hod_approved) {
+                authHtml += `
+                    <button onclick="window.print()" class="btn" style="background: #334155; color: white; padding: 8px 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer;">
+                        🖨️ Print Official Report
+                    </button>
+                `;
+            }
+
+            authHtml += `</div></div>`;
+            document.getElementById('auth-bar-container').innerHTML = authHtml;
+            // ===============================================
+
+            const labels = [];
+            const scores = [];
+            let totalScoreSum = 0;
+            let questionCount = 0;
+
+            questions.forEach((q, i) => {
+                const qNum = i + 1;
+                const score = parseFloat(tabData.stats[qNum.toString()] || 0);
+                
+                labels.push(`Q${qNum}`);
+                scores.push(score);
+                if(score > 0) {
+                    totalScoreSum += score;
+                    questionCount++;
+                }
+            });
+
+            const finalAvg = questionCount > 0 ? (totalScoreSum / questionCount).toFixed(2) : "0.0";
+            document.getElementById('big-score').innerText = finalAvg;
+
+            updateCharts(labels, scores, finalAvg);
+
+            const listContainer = document.getElementById('questions-list');
+            listContainer.innerHTML = '';
+            questions.forEach((q, i) => {
+                const qNum = i + 1;
+                const score = parseFloat(tabData.stats[qNum.toString()] || 0);
+                const width = (score / 10) * 100; 
+                
+                let color = '#e74c3c'; 
+                if(score >= 8) color = '#2ecc71'; 
+                else if(score >= 5) color = '#f1c40f'; 
+
+                listContainer.innerHTML += `
+                    <div class="q-item">
+                        <div class="q-header">
+                            <span>Q${qNum}. ${q}</span>
+                            <span style="color: ${color}; font-weight:bold;">${score} / 10</span>
+                        </div>
+                        <div class="bar-bg">
+                            <div class="bar-fill" style="width: ${width}%; background: ${color};"></div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // ==========================================
+            // DYNAMIC COMMENTS LOGIC
+            // ==========================================
+            const commentsContainer = document.getElementById('comments-container');
+            const commentBadge = document.getElementById('comment-badge');
+            
+            if (commentsContainer && commentBadge) {
+                commentsContainer.innerHTML = ''; // Clear out previous comments
+                const currentComments = tabData.comments || [];
+                
+                commentBadge.innerText = `(${currentComments.length} total)`;
+                
+                if (currentComments.length > 0) {
+                    currentComments.forEach(comment => {
+                        commentsContainer.innerHTML += `
+                            <div style="background: #f8fafc; padding: 10px; border-radius: 8px; font-size: 0.9rem; color: #334155; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.05); overflow-wrap: break-word; word-break: break-word;">
+                                ${comment}
+                            </div>
+                        `;
+                    });
+                } else {
+                    commentsContainer.innerHTML = `
+                        <div style="grid-column: 1 / -1; padding: 30px; text-align: center; color: #94a3b8; font-style: italic; background: #fcfcfc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+                            No text comments provided for this specific selection.
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function updateCharts(labels, data, avgScore) {
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+
+            if(myBarChart) myBarChart.destroy();
+            if(myPieChart) myPieChart.destroy();
+
+            myBarChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'Avg Score', data: data, backgroundColor: '#3498db', borderRadius: 4 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, max: 10 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const scoreVal = parseFloat(avgScore);
+            const missingVal = Math.max(0, 10.0 - scoreVal); 
+
+            myPieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Rating', 'Gap'],
+                    datasets: [{
+                        data: [scoreVal, missingVal],
+                        backgroundColor: [
+                            scoreVal >= 8 ? '#2ecc71' : (scoreVal >= 5 ? '#f1c40f' : '#e74c3c'), '#ecf0f1'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '70%',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                }
+            });
+        }
+
+        function filterSubjects() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.sub-card').forEach(card => {
+                const text = card.innerText.toLowerCase();
+                card.style.display = text.includes(query) ? 'block' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>

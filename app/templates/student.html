@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Portal</title>
+    <style>
+      /* =========================================
+         1. SOFT & SIMPLE THEME
+         ========================================= */
+      :root {
+        --primary-slate: #34495e;
+        --soft-blue: #5dade2;
+        --text-main: #2c3e50;
+        --text-light: #7f8c8d;
+        --bg-body: #f5f7fa;
+        --bg-card: #ffffff;
+        --border-light: #e0e6ed;
+        --submitted-green: #2ecc71;
+        --missed-red: #e74c3c;
+      }
+      
+      * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+      
+      body {
+        display: flex; height: 100vh;
+        background-color: var(--bg-body); color: var(--text-main);
+        overflow: hidden;
+      }
+      
+      /* =========================================
+         2. SIDEBAR
+         ========================================= */
+      .sidebar {
+        width: 20%; min-width: 250px;
+        background-color: var(--primary-slate); color: white;
+        display: flex; flex-direction: column; padding: 30px;
+        box-shadow: 4px 0 10px rgba(0, 0, 0, 0.03); z-index: 10;
+      }
+      
+      .sidebar h2 {
+        text-align: center; color: white; font-size: 1.2rem;
+        text-transform: uppercase; letter-spacing: 2px; margin-bottom: 40px;
+        font-weight: 600; opacity: 0.9;
+      }
+      
+      .student-info {
+        background: rgba(255, 255, 255, 0.08); padding: 20px;
+        border-radius: 8px; margin-bottom: 40px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      .info-row {
+        display: flex; justify-content: space-between;
+        margin-bottom: 10px; font-size: 0.85rem; color: rgba(255, 255, 255, 0.8);
+      }
+      .info-row span:last-child { color: white; font-weight: 500; }
+      
+      .nav-links a {
+        display: flex; align-items: center; justify-content: space-between;
+        color: rgba(255, 255, 255, 0.7); text-decoration: none;
+        padding: 12px 15px; margin-bottom: 8px; border-radius: 6px;
+        transition: all 0.2s ease; font-size: 0.95rem;
+      }
+      
+      .nav-links a:hover, .nav-links a.active {
+        background-color: rgba(255, 255, 255, 0.1); color: white;
+      }
+      
+      .logout-btn {
+        margin-top: auto; color: #ff7675 !important;
+        padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      /* =========================================
+         3. MAIN CONTENT
+         ========================================= */
+      .main-content {
+        width: 80%; padding: 40px;
+        display: flex; flex-direction: column; gap: 30px;
+        height: 100vh; overflow-y: auto; overflow-x: hidden;
+      }
+      
+      .content-section { display: none; flex-direction: column; gap: 30px; }
+      .content-section.active { display: flex; }
+      
+      .split-container {
+        background: var(--bg-card); border-radius: 8px;
+        padding: 25px; border: 1px solid var(--border-light);
+        display: flex; flex-direction: column;
+      }
+      
+      .section-title {
+        color: var(--primary-slate); font-size: 1.1rem;
+        font-weight: 600; margin-bottom: 20px;
+        padding-bottom: 15px; border-bottom: 1px solid var(--border-light);
+      }
+
+      /* SESSION CARDS (NEW STYLE) */
+      .session-card {
+          display: flex; justify-content: space-between; align-items: center;
+          background: white; border: 1px solid var(--border-light);
+          padding: 20px; border-radius: 8px; margin-bottom: 15px;
+          transition: 0.2s;
+      }
+      .session-card:hover { border-color: var(--soft-blue); box-shadow: 0 5px 15px rgba(0,0,0,0.03); }
+
+      .session-info h3 { margin: 0 0 5px 0; color: var(--primary-slate); font-size: 1.1rem; }
+      .session-info p { margin: 0; color: var(--text-light); font-size: 0.9rem; }
+
+      .token-badge {
+          font-family: monospace; font-size: 1.2rem; background: #fdf2f2; 
+          color: #c0392b; padding: 5px 15px; border-radius: 4px; border: 1px dashed #c0392b;
+          margin-right: 15px;
+      }
+
+      /* BUTTONS */
+      .btn {
+        padding: 10px 20px; border: none; border-radius: 6px;
+        cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s;
+      }
+      .btn-blue { background: var(--soft-blue); color: white; }
+      .btn-blue:hover { background: #4a9ecf; transform: translateY(-1px); }
+      .btn-green { background: var(--submitted-green); color: white; pointer-events: none; }
+      
+      .form-input {
+        width: 100%; padding: 12px; margin: 8px 0 20px 0;
+        border: 1px solid var(--border-light); border-radius: 6px; background: #fcfcfc;
+      }
+
+      /* HISTORY TABLE */
+      table { width: 100%; border-collapse: collapse; }
+      th { text-align: left; padding: 12px; color: #7f8c8d; border-bottom: 2px solid #eee; }
+      td { padding: 15px 12px; border-bottom: 1px solid #f9f9f9; }
+    </style>
+  </head>
+  <body>
+    <div class="sidebar">
+      <h2>Student Portal</h2>
+
+      <div class="student-info">
+        <div class="info-row"><span>PRN:&emsp;</span><span>{{ user.prn_empID }}</span></div>
+        <div class="info-row"><span>Name:&emsp;</span><span>{{ user.name }}</span></div>
+        <div class="info-row"><span>Semester:&emsp;</span><span>{{ user.semester }}</span></div>
+        <div class="info-row"><span>Batch:&emsp;</span><span>{{ user.division }} - {{ user.batch }}</span></div>
+        
+       
+
+      {% if elective_name %}
+        <div class="info-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
+            <span>Elective:&emsp;</span>
+            <span>
+                {{ elective_name }} - {{ elective_data.elective_div }} [{{ elective_data.elective_batch }}] 
+            </span>
+        </div>
+        {% endif %}
+        </div>
+
+      <div class="nav-links">
+        <a href="#" onclick="switchView('dashboard')" class="active" id="nav-dash">Dashboard <span>›</span></a>
+        <a href="#" onclick="switchView('password')" id="nav-pass">Security <span>›</span></a>
+        <a href="#" onclick="switchView('history')" id="nav-hist">History <span>›</span></a>
+        <a href="/logout" class="logout-btn">Logout <span>⏻</span></a>
+      </div>
+    </div>
+
+    <div class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-messages">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" style="padding: 15px; margin-bottom: 20px; border-radius: 6px; 
+                    background-color: {{ '#f8d7da' if category == 'danger' else '#d4edda' }}; 
+                    color: {{ '#721c24' if category == 'danger' else '#155724' }}; transition: opacity 0.5s ease;">
+                    {{ message }}
+                    <span style="float: right; cursor: pointer; font-weight: bold;" onclick="this.parentElement.style.display='none';">&times;</span>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
+      
+      <div id="dashboard-view" class="content-section active">
+        <div class="split-container">
+          <div class="section-title">Active Feedback Sessions</div>
+
+          {% if dashboard_data %}
+            {% for item in dashboard_data %}
+              <div class="session-card">
+                <div class="session-info">
+                    <h3>{{ item.session.sessionName }}</h3>
+                    <p>Session ID: {{ item.session.sessionID }}</p>
+                </div>
+
+                <div class="session-action" style="display: flex; align-items: center;">
+                    
+                    {% if item.status == 'submitted' %}
+                        <button class="btn btn-green">Submitted ✓</button>
+                    
+                    {% elif item.status == 'pending' %}
+                        <span class="token-badge" title="Use this token to unlock the form">{{ item.token }}</span>
+                        <a href="/student/feedback?session_id={{ item.session.sessionID }}" class="btn btn-blue">Open Form ➔</a>
+                    
+                    {% else %}
+                        <form action="/student/generate_token" method="POST">
+                            <input type="hidden" name="session_id" value="{{ item.session.sessionID }}">
+                            <button type="submit" class="btn btn-blue">Generate Token</button>
+                        </form>
+                    {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div style="text-align: center; color: var(--text-light); padding: 40px;">
+                <p>No active sessions available for your class/batch.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div id="password-view" class="content-section">
+        <h2 class="page-title" style="text-align: center;">Security Settings</h2>
+        <div class="split-container" style="max-width: 500px; margin: 0 auto;">
+          <div class="section-title">Update Password</div>
+          <form action="/change_password" method="POST">
+            <label>Current Password</label>
+            <input type="password" name="current_password" id="currentPass" class="form-input" required onkeyup="validatePassword()" />
+
+            <label>New Password</label>
+            <input type="password" name="new_password" id="newPass" class="form-input" required onkeyup="validatePassword()" />
+            <small id="newPassError" style="color: #e74c3c; display: none; margin-bottom: 10px;">New password cannot be the same as current.</small>
+
+            <label>Confirm New Password</label>
+            <input type="password" name="confirm_password" id="confirmPass" class="form-input" required onkeyup="validatePassword()" />
+            <small id="confirmPassError" style="color: #e74c3c; display: none; margin-bottom: 10px;">Passwords do not match.</small>
+
+            <button type="submit" id="updateBtn" class="btn btn-blue" style="width: 100%; margin-top: 10px;" disabled>Update</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="history-view" class="content-section">
+        <div class="split-container">
+          <div class="section-title">Past Feedback History</div>
+
+          {% if history_data %}
+            <table>
+              <thead>
+                <tr>
+                  <th>Session Name</th>
+                  <th style="text-align: right;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in history_data %}
+                  <tr>
+                    <td>{{ item.session.sessionName }}</td>
+                    <td style="text-align: right;">
+                      {% if item.status == 'completed' %}
+                        <span style="color: var(--submitted-green); font-weight: bold;">Completed</span>
+                      {% else %}
+                        <span style="color: var(--missed-red); font-weight: bold;">Missed / Not Submitted</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p style="text-align: center; color: #bdc3c7; padding: 40px;">No history available.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Set a timer for 5 seconds (5000 ms)
+            setTimeout(function() {
+                var flashContainer = document.getElementById('flash-messages');
+                if (flashContainer) {
+                    // 1. Fade it out
+                    flashContainer.style.opacity = "0";
+                    
+                    // 2. Remove it entirely from the screen 0.5 seconds later (after the fade animation finishes)
+                    setTimeout(function() {
+                        flashContainer.style.display = "none";
+                    }, 500);
+                }
+            }, 5000); 
+        });
+        
+        function switchView(view) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
+            
+            if(view === 'dashboard') {
+                document.getElementById('dashboard-view').classList.add('active');
+                document.getElementById('nav-dash').classList.add('active');
+            } else if(view === 'history') {
+                document.getElementById('history-view').classList.add('active');
+                document.getElementById('nav-hist').classList.add('active');
+            } else if(view === 'password') {
+                document.getElementById('password-view').classList.add('active');
+                document.getElementById('nav-pass').classList.add('active');
+            }
+        }
+
+        function validatePassword() {
+            const current = document.getElementById('currentPass').value;
+            const newP = document.getElementById('newPass').value;
+            const confirmP = document.getElementById('confirmPass').value;
+            const btn = document.getElementById('updateBtn');
+            const newError = document.getElementById('newPassError');
+            const confirmError = document.getElementById('confirmPassError');
+            
+            let isValid = true;
+
+            if (current && newP && current === newP) {
+                newError.style.display = 'block'; isValid = false;
+            } else { newError.style.display = 'none'; }
+
+            if (newP && confirmP && newP !== confirmP) {
+                confirmError.style.display = 'block'; isValid = false;
+            } else { confirmError.style.display = 'none'; }
+
+            if (isValid && current && newP && confirmP) {
+                btn.disabled = false; btn.style.opacity = "1"; btn.style.cursor = "pointer";
+            } else {
+                btn.disabled = true; btn.style.opacity = "0.6"; btn.style.cursor = "not-allowed";
+            }
+        }
+    </script>
+  </body>
+</html>

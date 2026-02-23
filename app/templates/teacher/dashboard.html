@@ -1,0 +1,65 @@
+{% extends "teacher/base.html" %}
+
+{% block content %}
+    <h2 class="page-title">Teacher Dashboard</h2>
+
+    <div class="card" style="border-left: 5px solid var(--soft-blue); padding: 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+        
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h3 style="margin: 0; color: #7f8c8d; font-size: 1rem; font-weight: 600; text-transform: uppercase;">
+                Class Teacher:
+            </h3>
+
+            {% if my_class %}
+                <h2 style="margin: 0; font-size: 1rem; color: var(--primary-slate);">
+                    SEM {{ my_class.semester }} - DIV {{ my_class.division }}
+                </h2>
+                <span style="background: #e0f2fe; color: #0284c7; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9rem;">
+                    {{ student_count }} Students
+                </span>
+            {% else %}
+                <span style="color: #bdc3c7; font-style: italic;">Not Assigned</span>
+            {% endif %}
+        </div>
+
+        {% if my_class %}
+            <a href="{{ url_for('teacher.manage_students') }}" class="btn btn-blue btn-sm" style="white-space: nowrap;">
+                Manage Class →
+            </a>
+        {% endif %}
+    </div>
+
+    <h3 class="card-title" style="border: none; margin-bottom: 15px;">Active Feedback Sessions</h3>
+
+{% if sessions %}
+    <div style="display: grid; gap: 10px;">
+        {% for s in sessions %}
+        <div class="card" style="margin-bottom: 0; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; border-left: 5px solid #2ecc71;">
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <h3 style="margin: 0; color: var(--primary-slate); font-size: 1.05rem;">{{ s.name }}</h3>
+                <span style="font-size: 0.8rem; color: #94a3b8; background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">ID: {{ s.id }}</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="font-size: 0.95rem; font-weight: 600; color: var(--primary-slate);">
+                    My Subjects: <span style="color: var(--soft-blue);">{{ s.subjects }}</span>
+                </div>
+
+                <span style="background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">
+                    Active
+                </span>
+                
+                <a href="{{ url_for('teacher.view_results') }}" class="btn btn-blue btn-sm" style="padding: 5px 12px;">Results →</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="card" style="text-align: center; padding: 40px; border: 1px dashed #ccc;">
+        <p style="color: #95a5a6;">No active feedback sessions at the moment.</p>
+    </div>
+{% endif %}
+
+
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+    <h2 class="page-title">Session Control</h2>
+
+    <div class="card">
+        <h3 class="card-title">Create New Session</h3>
+        <form action="{{ url_for('admin.add_session') }}" method="POST" class="form-grid" style="grid-template-columns: 1fr 3fr auto;">
+            <div class="form-group">
+                <label>Session ID (Integer)</label>
+                <input type="number" name="session_id" placeholder="e.g. 202601" required>
+            </div>
+            <div class="form-group">
+                <label>Session Name</label>
+                <input type="text" name="session_name" placeholder="e.g. Winter 2026 Mid-Term" required>
+            </div>
+            <button class="btn btn-blue" style="height: 40px; margin-bottom: 10px;">Create Session</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 class="card-title">All Sessions</h3>
+            <input type="text" id="searchSession" placeholder="Search Session..." style="width: 400px; padding: 6px;">
+        </div>
+
+        <table class="paginated-table" data-search-id="searchSession" data-pagination-id="pagiSession">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Allocated Forms</th>
+                    <th>Actions</th> </tr>
+            </thead>
+            <tbody>
+                {% for s in sessions %}
+                <tr>
+                    <td>{{ s.sessionID }}</td>
+                    <td style="font-weight: 600;">{{ s.sessionName }}</td>
+                    <td>
+                        {% if s.status == 1 %}<span style="color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold;">Active</span>
+                        {% elif s.status == 2 %}<span style="color: #333; background: #e2e8f0; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">Terminated</span>
+                        {% else %}<span style="color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">Inactive</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if s.alloc_count > 0 %} <strong>{{ s.alloc_count }} Forms</strong>
+                        {% else %} <span style="color: #ccc;">Empty</span> {% endif %}
+                    </td>
+                    
+                    <td style="display: flex; gap: 5px;">
+                        
+                        {% if s.status != 2 %}
+                        <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='deactivate' if s.status == 1 else 'activate') }}" method="POST">
+                            <button class="btn btn-sm {{ 'btn-red' if s.status == 1 else 'btn-blue' }}">
+                                {{ 'Pause' if s.status == 1 else 'Start' }}
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if s.status == 1 %}
+                            <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='terminate') }}" method="POST" onsubmit="return confirm('WARNING: Terminate this session? It cannot be restarted.');">
+                                <button class="btn btn-sm" style="background: #333; color: white;">Terminate</button>
+                            </form>
+                        {% endif %}
+
+                        {% if s.alloc_count == 0 %}
+                            <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='delete') }}" method="POST" onsubmit="return confirm('Permanently delete this session?');">
+                                <button class="btn btn-red btn-sm" style="background: white; color: red; border: 1px solid red;">Delete</button>
+                            </form>
+                        {% else %}
+                             <button class="btn btn-sm" style="background: #eee; color: #999; cursor: not-allowed;" title="Remove allocations first to delete" disabled>Delete</button>
+                        {% endif %}
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="pagiSession" style="margin-top: 15px; text-align: right;"></div>
+    </div>
+{% endblock %}

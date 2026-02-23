@@ -1,0 +1,31 @@
+{% extends "hod/base.html" %}
+{% block content %}
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
+        <a href="{{ url_for('hod.view_results') }}" class="btn btn-sm btn-blue" style="background: #64748b;">← Sessions</a>
+        <h2 class="page-title" style="margin: 0;">Teachers: {{ curr_session.sessionName }}</h2>
+    </div>
+
+    <input type="text" id="teacherSearch" placeholder="Search Teacher Name or ID..." 
+           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px;">
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+        {% for t in teachers %}
+        <div class="card teacher-card" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h3 style="margin: 0; font-size: 1rem;">{{ t.name }}</h3>
+                <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ t.prn_empID }}</span>
+            </div>
+            <a href="{{ url_for('hod.teacher_report', session_id=curr_session.sessionID, teacher_id=t.userID) }}" class="btn btn-blue btn-sm">Analysis ➔</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.getElementById('teacherSearch').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            document.querySelectorAll('.teacher-card').forEach(card => {
+                card.style.display = card.innerText.toLowerCase().includes(filter) ? 'flex' : 'none';
+            });
+        });
+    </script>
+{% endblock %}
