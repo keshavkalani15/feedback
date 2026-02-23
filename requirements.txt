@@ -5,3 +5,6 @@ cryptography
 SQLAlchemy
 python-dotenv
 werkzeug
+flask-wtf
+waitress
+paste
