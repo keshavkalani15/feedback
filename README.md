@@ -1,23 +1,55 @@
-# FeedBack Project
+# 📋 FeedBack Project
 
-A comprehensive, role-based academic feedback system built with Flask, SQLAlchemy, and MySQL. This application facilitates student feedback collection, teacher evaluation, and administrative reporting across four distinct roles: **Admin**, **HOD**, **Teacher**, and **Student**.
+A comprehensive, role-based academic feedback system built with **Flask**, **SQLAlchemy**, and **MySQL**. This application facilitates anonymous student feedback collection, teacher evaluation, and administrative reporting across four distinct roles: **Admin**, **HOD**, **Teacher**, and **Student**.
 
-## Features
+---
 
-- **Multi-Role Authentication**: Dedicated portals for Admins, HODs, Teachers, and Students.
-- **Dynamic Feedback Forms**: Automatically generated forms based on student class and elective subjects.
-- **Anonymous Feedback**: Token-based submission system ensures complete student anonymity.
-- **Class & Subject Management**: Bulk CSV upload support for importing students, teachers, and subjects.
-- **Automated Reporting**: Real-time generation of feedback scores and subjective comments for HOD review.
-- **Production-Ready Security**: Global CSRF protection, PBKDF2 password hashing, and role-based route locking.
+## ✨ Features
 
-## Prerequisites
+### 🔑 Multi-Role Authentication
+- Dedicated login portals for **Admins/Teachers/Students** and a separate **Management Portal** for HODs.
+- Session-based authentication with role-specific route protection.
 
-Before running the application, ensure you have the following installed:
+### 📝 Anonymous Feedback System
+- **Token-based submissions** ensure complete student anonymity — feedback cannot be traced back to individuals.
+- Dynamically generated forms based on student class, division, batch, and elective subjects.
+- Separate configurable question sets for **Theory** and **Practical** subjects (stored as JSON).
 
-1. **Python 3.8+**
-2. **MySQL Server** (XAMPP/WAMP or native installation)
-3. **pip** (Python package installer)
+### 👨‍💼 Admin Panel
+- Manage **Teachers**, **Subjects**, **Sessions**, and **Allocations** (teacher → subject → class mappings).
+- **Bulk CSV upload** for importing students, teachers, and subjects.
+- Assign **Class Teachers** and **promote/rollback** students across semesters.
+- View detailed feedback **reports** with per-question breakdowns and subjective comments.
+
+### 🎓 HOD (Head of Department) Portal
+- Create and manage **Admin** accounts.
+- Review and **approve/reject** feedback reports submitted by teachers.
+- Access consolidated feedback results across all sessions and teachers.
+
+### 👩‍🏫 Teacher Portal
+- View personal feedback scores and student comments.
+- Manage student records: add, edit, delete students and assign elective subjects.
+- **Acknowledge** feedback reports for HOD review.
+
+### 🧑‍🎓 Student Portal
+- Generate a one-time anonymous **feedback token**.
+- Submit feedback for all allocated subjects in a single, guided form.
+
+### 🔒 Security
+- **Global CSRF protection** via `Flask-WTF` on all forms and AJAX endpoints.
+- **PBKDF2-SHA256** password hashing using Werkzeug.
+- **Admin password confirmation** required for destructive actions (deleting teachers/subjects).
+- Role-based route locking prevents unauthorized access.
+
+---
+
+## 📋 Prerequisites
+
+| Requirement | Version |
+|---|---|
+| **Python** | 3.8+ |
+| **MySQL Server** | 5.7+ (XAMPP/WAMP or native) |
+| **pip** | Latest recommended |
 
 ---
 
@@ -32,8 +64,10 @@ cd FeedBack_Project
 ### 2. Create a Virtual Environment (Recommended)
 ```bash
 python -m venv venv
+
 # On Windows:
 venv\Scripts\activate
+
 # On Mac/Linux:
 source venv/bin/activate
 ```
@@ -43,8 +77,8 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Database Setup
-Create a `.env` file in the root directory of the project and add your MySQL database credentials. The app will automatically create the database and tables on startup if they don't exist.
+### 4. Configure Environment Variables
+Create a `.env` file in the project root:
 
 ```env
 DB_HOST=localhost
@@ -53,64 +87,152 @@ DB_PASSWORD=your_mysql_password
 DB_NAME=feedback_db
 SECRET_KEY=generate_a_strong_random_secret_key
 ```
-*(Note: If your local MySQL doesn't use a password, leave `DB_PASSWORD=` blank)*
+
+> [!NOTE]
+> If your local MySQL doesn't use a password, leave `DB_PASSWORD=` blank.
+
+The app will **automatically create the database and tables** on first startup.
 
 ---
 
 ## 🛠️ Usage
 
-### Development Server (For Testing)
-If you want to run the application in debug mode for development:
+### Development Server
+For testing and development with hot-reload:
 ```bash
 python run.py
 ```
-*Access the app at: `http://127.0.0.1:5000`*
+Access at: `http://127.0.0.1:5000`
 
-### Production Server (For Local Deployment)
-For actual deployment or allowing multiple students to access the app concurrently over your local network:
+### Production Server
+For deployment or allowing concurrent access over your local network:
 ```bash
 python serve.py
 ```
-*Access the app at: `http://0.0.0.0:80` (or `5000` depending on port availability). You can share your computer's IP address (e.g., `http://192.168.x.x`) with students to access the portal.*
+Access at: `http://0.0.0.0:80` (falls back to port `5000` if port 80 is unavailable).
+
+> [!TIP]
+> Share your machine's IP address (e.g., `http://192.168.x.x`) with students so they can access the feedback portal from their devices.
 
 ---
 
-## 🔐 Default Credentials
+## 🔐 Getting Started — First-Time Setup
 
-To get started, the system requires an initial **HOD (Head of Department)** or **Admin**.
+### 1. Create the Root HOD Account
 
-You can run the `create_hod.py` script to generate the root user:
+Run the setup script (edit credentials in `create_hod.py` first if needed):
 ```bash
 python create_hod.py
 ```
-*(Make sure to update the script with your desired HOD credentials before running).*
 
-Once the HOD is created, they can log into the **Management Portal** to create Admins. Admins can then create Teachers and Subjects.
+**Default HOD credentials:**
+| Field | Value |
+|---|---|
+| ID | `HOD123` |
+| Password | `HOD123` |
 
-### Important Routes
-- **Main Portal**: `http://localhost/login` (For Admins, Teachers, and Students)
-- **HOD Portal**: `http://localhost/management_login` (Strictly for HODs)
+### 2. Setup Hierarchy
+
+```
+HOD ──creates──▶ Admins ──creates──▶ Teachers & Subjects
+                                          │
+                                    allocate to classes
+                                          │
+                              Students submit anonymous feedback
+```
+
+### 3. Important Routes
+
+| Route | Portal | Who Can Access |
+|---|---|---|
+| `/login` | Main Portal | Admins, Teachers, Students |
+| `/management_login` | Management Portal | HODs only |
 
 ---
 
 ## 📂 Project Structure
 
-```text
+```
 FeedBack_Project/
 ├── app/
-│   ├── routes/              # Route controllers (admin, hod, student, teacher)
-│   ├── templates/           # Jinja2 HTML templates
-│   ├── __init__.py          # Flask app application factory & CSRF setup
-│   ├── models.py            # SQLAlchemy Database Models
-│   └── utils.py             # Helper logic for loading feedback JSON questions
-├── feedback_questions.json  # Configurable feedback questions for the forms
-├── config.py                # Environment and Database configuration
-├── run.py                   # Development server entry point
-├── serve.py                 # Production Waitress WSGI server entry point
-└── requirements.txt         # Python dependencies
+│   ├── __init__.py              # App factory, CSRF setup, blueprint registration
+│   ├── models.py                # 13 SQLAlchemy models (User, Session, Subject, etc.)
+│   ├── utils.py                 # Helper to load feedback questions from JSON
+│   ├── data/
+│   │   ├── theory_questions.json    # Configurable theory feedback questions
+│   │   └── lab_questions.json       # Configurable practical feedback questions
+│   ├── routes/
+│   │   ├── auth_routes.py       # Login/logout for all roles
+│   │   ├── admin_routes.py      # Full admin CRUD & reporting
+│   │   ├── hod_routes.py        # HOD management & report approval
+│   │   ├── student_routes.py    # Token generation & feedback submission
+│   │   └── teacher_routes.py    # Student management & report viewing
+│   └── templates/
+│       ├── login.html               # Main login page
+│       ├── management_login.html    # HOD login page
+│       ├── student.html             # Student dashboard
+│       ├── feedback_form.html       # Anonymous feedback form
+│       ├── admin/  (15 templates)   # Admin panel views
+│       ├── hod/    (9 templates)    # HOD portal views
+│       └── teacher/(8 templates)    # Teacher portal views
+├── config.py                    # Environment & database configuration
+├── create_hod.py                # One-time HOD account creation script
+├── run.py                       # Development server entry point (Flask)
+├── serve.py                     # Production server entry point (Waitress + TransLogger)
+├── requirements.txt             # Python dependencies
+├── .env                         # Environment variables (not committed)
+├── .gitignore
+├── *.csv                        # Sample CSV files for bulk uploads
+└── walkthrough.pdf              # Application walkthrough document
 ```
 
-## Security Notes
-- **Do not commit `.env` to version control.**
-- **Default Passwords**: When Admins create Teachers, the default password is `{EmpID}@123` (e.g., `T101@123`). Force users to change this upon first login.
-- **Destructive Actions**: Deleting subjects or teachers cascades to delete historical feedback data. These actions are locked behind mandatory Admin password prompts.
+---
+
+## 🗄️ Database Schema
+
+The application uses **13 interconnected models**:
+
+| Model | Purpose |
+|---|---|
+| `User` | All users (admin, teacher, student, HOD) with role-based access |
+| `Session` | Feedback collection sessions (open/closed status) |
+| `Subject` | Theory/Practical subjects with elective & linked-subject support |
+| `StudentElective` | Maps students to their chosen elective subjects |
+| `Allocation` | Maps teacher → subject → target class (semester/division/batch) |
+| `TokenLog` | Tracks whether a student has generated/submitted a token per session |
+| `ValidToken` | Pool of valid anonymous tokens |
+| `ActiveTokenMap` | Links students to their currently active token (session-scoped) |
+| `FeedbackResult` | Individual question ratings per allocation |
+| `FeedbackComment` | Subjective text comments per allocation |
+| `ClassTeacherAllocation` | Assigns teachers as class teachers for specific divisions |
+| `ReportApproval` | Tracks teacher acknowledgment and HOD approval of feedback reports |
+
+---
+
+## 📦 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Backend** | Flask, Flask-SQLAlchemy, Flask-WTF |
+| **Database** | MySQL (via PyMySQL) |
+| **Auth** | Werkzeug (PBKDF2-SHA256), Flask sessions |
+| **WSGI Server** | Waitress (production), Flask dev server |
+| **Logging** | Paste TransLogger (production access logs) |
+| **Templating** | Jinja2 |
+
+---
+
+## ⚠️ Security Notes
+
+> [!CAUTION]
+> **Never commit `.env` to version control.** It contains your database credentials and secret key.
+
+- **Default Teacher Passwords**: When Admins create Teachers, the default password is `{EmpID}@123` (e.g., `T101@123`). Users should change this on first login.
+- **Destructive Actions**: Deleting subjects or teachers **cascades** to delete all associated feedback data. These actions require **Admin password confirmation**.
+- **CSRF Protection**: All form submissions and AJAX requests are protected by CSRF tokens.
+
+---
+
+## 📄 License
+
+This project is for academic/educational use.
