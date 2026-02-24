@@ -1,59 +1,65 @@
 {% extends "admin/base.html" %}
 
-{% block header_stats %}
-<div style="font-size: 0.9rem; color: #64748b; display: flex; gap: 15px;">
-    <span>Teachers: <strong>{{ stats.teachers }}</strong></span>
-    <span>Students: <strong>{{ stats.students }}</strong></span>
-</div>
-{% endblock %}
-
 {% block content %}
-    <h2 class="page-title">Dashboard</h2>
-
-    <div class="card">
-        <h3 class="card-title">Session Overview</h3>
-        
-        <table style="margin-top: 10px;">
-            <thead>
-                <tr>
-                    <th style="width: 15%;">Session ID</th>
-                    <th style="width: 40%;">Name</th>
-                    <th style="width: 20%;">Status</th>
-                    <th style="width: 25%;">Action</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for s in sessions %}
-                <tr>
-                    <td style="color: #7f8c8d; font-weight: bold;">{{ s.sessionID }}</td>
-                    <td style="font-size: 1.05rem; font-weight: 600;">{{ s.sessionName }}</td>
-                    <td>
-                        {% if s.status == 1 %}
-                            <span style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                                ● Active
-                            </span>
-                        {% else %}
-                            <span style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
-                                ○ Inactive
-                            </span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <form action="{{ url_for('admin.session_action', session_id=s.sessionID, action='deactivate' if s.status == 1 else 'activate') }}" method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            {% if s.status == 1 %}
-                                <button class="btn btn-red" style="padding: 6px 15px; font-size: 0.8rem;">Stop Session</button>
-                            {% else %}
-                                <button class="btn btn-blue" style="padding: 6px 15px; font-size: 0.8rem;">Activate</button>
-                            {% endif %}
-                        </form>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="4" style="text-align: center; padding: 20px;">No sessions found. Create one in Session Control.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h2 class="page-title" style="margin-bottom: 0;">Dashboard</h2>
+    <div style="font-size: 0.9rem; color: #64748b; display: flex; gap: 15px;">
+        <span>Teachers: <strong>{{ stats.teachers }}</strong></span>
+        <span>Students: <strong>{{ stats.students }}</strong></span>
     </div>
+</div>
+
+<div class="card">
+    <h3 class="card-title">Session Overview</h3>
+
+    <table style="margin-top: 10px;">
+        <thead>
+            <tr>
+                <th style="width: 15%;">Session ID</th>
+                <th style="width: 40%;">Name</th>
+                <th style="width: 20%;">Status</th>
+                <th style="width: 25%;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in sessions %}
+            <tr>
+                <td style="color: #7f8c8d; font-weight: bold;">{{ s.sessionID }}</td>
+                <td style="font-size: 1.05rem; font-weight: 600;">{{ s.sessionName }}</td>
+                <td>
+                    {% if s.status == 1 %}
+                    <span
+                        style="background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                        ● Active
+                    </span>
+                    {% else %}
+                    <span
+                        style="background: #f1f5f9; color: #64748b; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">
+                        ○ Inactive
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form
+                        action="{{ url_for('admin.session_action', session_id=s.sessionID, action='deactivate' if s.status == 1 else 'activate') }}"
+                        method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {% if s.status == 1 %}
+                        <button class="btn btn-red" style="padding: 6px 15px; font-size: 0.8rem;">Stop Session</button>
+                        {% else %}
+                        <button class="btn btn-blue" style="padding: 6px 15px; font-size: 0.8rem;">Activate</button>
+                        {% endif %}
+                    </form>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 20px;">No sessions found. Create one in Session
+                    Control.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 
 {% endblock %}
