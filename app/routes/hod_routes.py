@@ -23,8 +23,14 @@ def dashboard():
 def view_results():
     if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
     sessions = Session.query.order_by(Session.sessionID.desc()).all()
+    
+    # OPTIMIZED: Batch count allocations in one query instead of N queries
+    alloc_counts = dict(
+        db.session.query(Allocation.sessionID, func.count(Allocation.allocationID))
+        .group_by(Allocation.sessionID).all()
+    )
     for s in sessions:
-        s.alloc_count = Allocation.query.filter_by(sessionID=s.sessionID).count()
+        s.alloc_count = alloc_counts.get(s.sessionID, 0)
     return render_template('hod/results_sessions.html', sessions=sessions)
 
 @hod_bp.route('/results/session/<int:session_id>')
@@ -36,28 +42,35 @@ def session_teachers(session_id):
     teacher_ids = [t[0] for t in teacher_ids]
     teachers = User.query.filter(User.userID.in_(teacher_ids)).all()
 
+    # --- OPTIMIZED: Batch fetch subject counts per teacher in one query ---
+    subject_counts_by_teacher = {}
+    subject_count_rows = db.session.query(
+        Allocation.teacherID, func.count(func.distinct(Allocation.subjectID))
+    ).filter_by(sessionID=session_id).group_by(Allocation.teacherID).all()
+    for row in subject_count_rows:
+        subject_counts_by_teacher[row[0]] = row[1]
+
+    # --- OPTIMIZED: Batch fetch ALL overall approvals for this session in one query ---
+    all_approvals = ReportApproval.query.filter_by(
+        sessionID=session_id,
+        allocationID=None
+    ).all()
+    
+    # Group approvals by teacherID
+    approvals_by_teacher = {}
+    for a in all_approvals:
+        if a.teacherID not in approvals_by_teacher:
+            approvals_by_teacher[a.teacherID] = []
+        approvals_by_teacher[a.teacherID].append(a)
+
     # --- Compute per-teacher status for colour-coding ---
-    # We look at the *overall* approval records (allocationID IS NULL) for each teacher
     teacher_info = []
     for t in teachers:
-        # All distinct subject IDs this teacher is allocated to in this session
-        subject_ids = [
-            row[0] for row in
-            db.session.query(Allocation.subjectID)
-                      .filter_by(teacherID=t.userID, sessionID=session_id)
-                      .distinct().all()
-        ]
-        total_subjects = len(subject_ids)
-
-        # Overall-level approval records (one per subject, allocationID=None)
-        overall_approvals = ReportApproval.query.filter_by(
-            sessionID=session_id,
-            teacherID=t.userID,
-            allocationID=None
-        ).all()
-
-        agreed_count   = sum(1 for a in overall_approvals if a.teacher_agreed)
-        approved_count = sum(1 for a in overall_approvals if a.hod_approved)
+        total_subjects = subject_counts_by_teacher.get(t.userID, 0)
+        
+        teacher_approvals = approvals_by_teacher.get(t.userID, [])
+        agreed_count   = sum(1 for a in teacher_approvals if a.teacher_agreed)
+        approved_count = sum(1 for a in teacher_approvals if a.hod_approved)
 
         all_agreed      = (total_subjects > 0) and (agreed_count   >= total_subjects)
         all_hod_approved = (total_subjects > 0) and (approved_count >= total_subjects)

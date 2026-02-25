@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 import io
 from app.models import StudentElective, db, User, Session, Subject, Allocation, ClassTeacherAllocation, TokenLog, FeedbackResult
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from app.utils import load_questions
 import re
 from app.models import FeedbackComment # Make sure this is in your imports
@@ -45,10 +46,13 @@ def manage_sessions():
     # Get all sessions
     all_sessions = Session.query.order_by(Session.sessionID.desc()).all()
     
-    # LOGIC: Attach 'allocation_count' to each session object dynamically
-    # This lets us hide the delete button in the HTML
+    # OPTIMIZED: Batch count allocations in one query instead of N queries
+    alloc_counts = dict(
+        db.session.query(Allocation.sessionID, func.count(Allocation.allocationID))
+        .group_by(Allocation.sessionID).all()
+    )
     for s in all_sessions:
-        s.alloc_count = Allocation.query.filter_by(sessionID=s.sessionID).count()
+        s.alloc_count = alloc_counts.get(s.sessionID, 0)
 
     return render_template('admin/manage_sessions.html', sessions=all_sessions)
 
@@ -366,47 +370,90 @@ def allocations():
     sessions = Session.query.filter(Session.status != 2).order_by(Session.sessionID.desc()).all()
     teachers = User.query.filter_by(role='teacher').all()
     
-    raw_allocations = Allocation.query.join(Session).filter(Session.status != 2).order_by(Allocation.allocationID.desc()).all()
+    # OPTIMIZED: Eager-load subject relationship to avoid N+1 queries
+    raw_allocations = Allocation.query.options(joinedload(Allocation.subject))\
+        .join(Session).filter(Session.status != 2)\
+        .order_by(Allocation.allocationID.desc()).all()
+    
+    # OPTIMIZED: Batch count regular students grouped by (semester, division, batch)
+    regular_student_counts = dict(
+        db.session.query(
+            func.concat(User.semester, '|', User.division, '|', User.batch),
+            func.count(User.userID)
+        ).filter(User.role == 'student')
+        .group_by(User.semester, User.division, User.batch).all()
+    )
+    # Also count per (semester, division) for 'All' batches
+    regular_student_counts_all = dict(
+        db.session.query(
+            func.concat(User.semester, '|', User.division),
+            func.count(User.userID)
+        ).filter(User.role == 'student')
+        .group_by(User.semester, User.division).all()
+    )
+    
+    # OPTIMIZED: Batch count elective students grouped by (subjectID, elective_div, elective_batch)
+    elec_student_counts = dict(
+        db.session.query(
+            func.concat(StudentElective.subjectID, '|', StudentElective.elective_div, '|', StudentElective.elective_batch),
+            func.count(StudentElective.studentPRN)
+        ).group_by(StudentElective.subjectID, StudentElective.elective_div, StudentElective.elective_batch).all()
+    )
+    elec_student_counts_all = dict(
+        db.session.query(
+            func.concat(StudentElective.subjectID, '|', StudentElective.elective_div),
+            func.count(StudentElective.studentPRN)
+        ).group_by(StudentElective.subjectID, StudentElective.elective_div).all()
+    )
+    
+    # OPTIMIZED: Batch count submitted TokenLogs grouped by (sessionID, semester, division, batch)
+    submitted_regular = {}
+    sub_reg_rows = db.session.query(
+        TokenLog.sessionID, User.semester, User.division, User.batch,
+        func.count(TokenLog.studentID)
+    ).join(User, TokenLog.studentID == User.userID)\
+     .filter(TokenLog.is_submitted == True)\
+     .group_by(TokenLog.sessionID, User.semester, User.division, User.batch).all()
+    for row in sub_reg_rows:
+        submitted_regular[f"{row[0]}|{row[1]}|{row[2]}|{row[3]}"] = row[4]
+        # Also accumulate per (session, semester, division) for 'All' batch lookups
+        all_key = f"{row[0]}|{row[1]}|{row[2]}"
+        submitted_regular[all_key] = submitted_regular.get(all_key, 0) + row[4]
+    
+    # OPTIMIZED: Batch count submitted elective TokenLogs
+    submitted_elec = {}
+    sub_elec_rows = db.session.query(
+        TokenLog.sessionID, StudentElective.subjectID, StudentElective.elective_div, StudentElective.elective_batch,
+        func.count(TokenLog.studentID)
+    ).join(User, TokenLog.studentID == User.userID)\
+     .join(StudentElective, User.prn_empID == StudentElective.studentPRN)\
+     .filter(TokenLog.is_submitted == True)\
+     .group_by(TokenLog.sessionID, StudentElective.subjectID, StudentElective.elective_div, StudentElective.elective_batch).all()
+    for row in sub_elec_rows:
+        submitted_elec[f"{row[0]}|{row[1]}|{row[2]}|{row[3]}"] = row[4]
+        all_key = f"{row[0]}|{row[1]}|{row[2]}"
+        submitted_elec[all_key] = submitted_elec.get(all_key, 0) + row[4]
+    
     allocations_data = []
     
     for a in raw_allocations:
-        subj = Subject.query.get(a.subjectID)
+        subj = a.subject  # Already loaded via joinedload, no DB hit
         is_elec = subj.is_elective if subj else False
 
         if is_elec:
-            elec_query = StudentElective.query.filter_by(subjectID=a.subjectID, elective_div=a.targetDivision)
             if a.targetBatch != 'All':
-                elec_query = elec_query.filter_by(elective_batch=a.targetBatch)
-                
-            total_students = elec_query.count()
-            
-            submitted_count = db.session.query(TokenLog).join(User, TokenLog.studentID == User.userID)\
-                .join(StudentElective, User.prn_empID == StudentElective.studentPRN)\
-                .filter(
-                    TokenLog.sessionID == a.sessionID,
-                    TokenLog.is_submitted == True,
-                    StudentElective.subjectID == a.subjectID,
-                    StudentElective.elective_div == a.targetDivision
-                )
-            if a.targetBatch != 'All':
-                submitted_count = submitted_count.filter(StudentElective.elective_batch == a.targetBatch)
-            submitted_count = submitted_count.count()
-
+                total_students = elec_student_counts.get(f"{a.subjectID}|{a.targetDivision}|{a.targetBatch}", 0)
+                submitted_count = submitted_elec.get(f"{a.sessionID}|{a.subjectID}|{a.targetDivision}|{a.targetBatch}", 0)
+            else:
+                total_students = elec_student_counts_all.get(f"{a.subjectID}|{a.targetDivision}", 0)
+                submitted_count = submitted_elec.get(f"{a.sessionID}|{a.subjectID}|{a.targetDivision}", 0)
         else:
-            student_query = User.query.filter_by(role='student', semester=a.targetSemester, division=str(a.targetDivision))
             if a.targetBatch != 'All':
-                student_query = student_query.filter_by(batch=a.targetBatch)
-            total_students = student_query.count()
-
-            submitted_query = db.session.query(TokenLog).join(User, TokenLog.studentID == User.userID).filter(
-                TokenLog.sessionID == a.sessionID,
-                TokenLog.is_submitted == True,
-                User.semester == a.targetSemester,
-                User.division == str(a.targetDivision)
-            )
-            if a.targetBatch != 'All':
-                submitted_query = submitted_query.filter(User.batch == a.targetBatch)
-            submitted_count = submitted_query.count()
+                total_students = regular_student_counts.get(f"{a.targetSemester}|{a.targetDivision}|{a.targetBatch}", 0)
+                submitted_count = submitted_regular.get(f"{a.sessionID}|{a.targetSemester}|{a.targetDivision}|{a.targetBatch}", 0)
+            else:
+                total_students = regular_student_counts_all.get(f"{a.targetSemester}|{a.targetDivision}", 0)
+                submitted_count = submitted_regular.get(f"{a.sessionID}|{a.targetSemester}|{a.targetDivision}", 0)
         
         allocations_data.append({
             'obj': a, 'total': total_students, 'submitted': submitted_count, 'is_elective': is_elec 
@@ -751,9 +798,14 @@ def upload_teachers_csv():
 def view_results():
     if session.get('role') != 'admin': return redirect(url_for('auth.login'))
     sessions = Session.query.order_by(Session.sessionID.desc()).all()
-        
+    
+    # OPTIMIZED: Batch count allocations in one query instead of N queries
+    alloc_counts = dict(
+        db.session.query(Allocation.sessionID, func.count(Allocation.allocationID))
+        .group_by(Allocation.sessionID).all()
+    )
     for s in sessions:
-        s.alloc_count = Allocation.query.filter_by(sessionID=s.sessionID).count()
+        s.alloc_count = alloc_counts.get(s.sessionID, 0)
         
     return render_template('admin/results_sessions.html', sessions=sessions)
 

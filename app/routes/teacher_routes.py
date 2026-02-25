@@ -70,14 +70,17 @@ def dashboard():
         ).count()
 
     active_sessions = Session.query.filter_by(status=1).order_by(Session.sessionID.desc()).all()
-    my_sessions_data = []
     
+    # OPTIMIZED: Batch count this teacher's allocations per session in one query
+    my_alloc_counts = dict(
+        db.session.query(Allocation.sessionID, func.count(Allocation.allocationID))
+        .filter(Allocation.teacherID == user.userID)
+        .group_by(Allocation.sessionID).all()
+    )
+    
+    my_sessions_data = []
     for s in active_sessions:
-        subject_count = Allocation.query.filter_by(
-            teacherID=user.userID, 
-            sessionID=s.sessionID
-        ).count()
-        
+        subject_count = my_alloc_counts.get(s.sessionID, 0)
         if subject_count > 0:
             my_sessions_data.append({
                 'id': s.sessionID,
@@ -371,10 +374,17 @@ def view_results():
     user = User.query.get(session['user_id'])
     
     all_sessions = Session.query.order_by(Session.status.asc(), Session.sessionID.desc()).all()
-    results_list = []
     
+    # OPTIMIZED: Batch count this teacher's allocations per session in one query
+    my_alloc_counts = dict(
+        db.session.query(Allocation.sessionID, func.count(Allocation.allocationID))
+        .filter(Allocation.teacherID == user.userID)
+        .group_by(Allocation.sessionID).all()
+    )
+    
+    results_list = []
     for s in all_sessions:
-        subject_count = Allocation.query.filter_by(teacherID=user.userID, sessionID=s.sessionID).count()
+        subject_count = my_alloc_counts.get(s.sessionID, 0)
         if subject_count > 0:
             results_list.append({
                 'id': s.sessionID,

@@ -11,24 +11,24 @@ class User(db.Model):
     prn_empID = db.Column(db.String(50), unique=True, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     password = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum('admin', 'teacher', 'student', 'HOD'), nullable=False) 
-    semester = db.Column(db.Integer)
-    division = db.Column(db.String(10))
+    role = db.Column(db.Enum('admin', 'teacher', 'student', 'HOD'), nullable=False, index=True) 
+    semester = db.Column(db.Integer, index=True)
+    division = db.Column(db.String(10), index=True)
     batch = db.Column(db.String(10))
 
 class Session(db.Model):
     __tablename__ = 'sessions'
     sessionID = db.Column(db.Integer, primary_key=True) 
     sessionName = db.Column(db.String(100), nullable=False)    
-    status = db.Column(db.Integer, default=0)
+    status = db.Column(db.Integer, default=0, index=True)
     
 class Subject(db.Model):
     __tablename__ = 'subjects'
     subjectID = db.Column(db.Integer, primary_key=True)
     subjectName = db.Column(db.String(100), nullable=False)
     subjectType = db.Column(db.Enum('Theory', 'Practical'), nullable=False)
-    is_elective = db.Column(db.Boolean, default=False) 
-    semester = db.Column(db.Integer, nullable=False)
+    is_elective = db.Column(db.Boolean, default=False, index=True) 
+    semester = db.Column(db.Integer, nullable=False, index=True)
     linked_subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subjectID', ondelete='SET NULL'), nullable=True)
     linked_subject = db.relationship('Subject', remote_side=[subjectID], backref='linked_by')
 
@@ -60,7 +60,7 @@ class TokenLog(db.Model):
     studentID = db.Column(db.Integer, db.ForeignKey('users.userID', ondelete='CASCADE'), primary_key=True)
     sessionID = db.Column(db.Integer, db.ForeignKey('sessions.sessionID', ondelete='CASCADE'), primary_key=True)
     has_generated = db.Column(db.Boolean, default=False)
-    is_submitted = db.Column(db.Boolean, default=False)
+    is_submitted = db.Column(db.Boolean, default=False, index=True)
 
 class ValidToken(db.Model):
     __tablename__ = 'valid_tokens'
@@ -91,7 +91,7 @@ class FeedbackComment(db.Model):
 class ClassTeacherAllocation(db.Model):
     __tablename__ = 'class_teacher_allocations'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)    
-    teacherID = db.Column(db.Integer, db.ForeignKey('users.userID', ondelete='CASCADE'), nullable=False)    
+    teacherID = db.Column(db.Integer, db.ForeignKey('users.userID', ondelete='CASCADE'), nullable=False, index=True)    
     semester = db.Column(db.Integer, nullable=False)
     division = db.Column(db.String(10), nullable=False) 
     teacher = db.relationship('User', backref='class_allocations')
@@ -105,6 +105,6 @@ class ReportApproval(db.Model):
     sessionID = db.Column(db.Integer, db.ForeignKey('sessions.sessionID', ondelete='CASCADE'), nullable=False, index=True)
     teacherID = db.Column(db.Integer, db.ForeignKey('users.userID', ondelete='CASCADE'), nullable=False, index=True)
     subjectID = db.Column(db.Integer, db.ForeignKey('subjects.subjectID', ondelete='CASCADE'), nullable=False)
-    allocationID = db.Column(db.Integer, db.ForeignKey('allocations.allocationID', ondelete='CASCADE'), nullable=True)
+    allocationID = db.Column(db.Integer, db.ForeignKey('allocations.allocationID', ondelete='CASCADE'), nullable=True, index=True)
     teacher_agreed = db.Column(db.Boolean, default=False)
     hod_approved = db.Column(db.Boolean, default=False)

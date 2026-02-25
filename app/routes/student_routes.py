@@ -17,44 +17,67 @@ def student_dashboard():
     
     user = User.query.get(session['user_id'])
     student_electives = StudentElective.query.filter_by(studentPRN=user.prn_empID).all()
+    elec_subject_ids = [e.subjectID for e in student_electives]
+    
+    # Build an elective lookup for quick div/batch matching
+    elec_lookup = {}
+    for e in student_electives:
+        elec_lookup[e.subjectID] = e
+    
+    # =========================================================
+    # OPTIMIZED: Bulk fetch all allocations relevant to this student
+    # across ALL sessions in one go, then group by sessionID in Python
+    # =========================================================
+    
+    # 1. Bulk fetch core allocations for this student's semester/division
+    core_allocs = Allocation.query.join(Subject).filter(
+        Allocation.targetSemester == user.semester,
+        Allocation.targetDivision == str(user.division),
+        or_(Allocation.targetBatch == 'All', Allocation.targetBatch == user.batch),
+        Subject.is_elective == False
+    ).all()
+    
+    # Group core allocations by sessionID
+    core_session_ids = set()
+    for a in core_allocs:
+        core_session_ids.add(a.sessionID)
+    
+    # 2. Bulk fetch elective allocations for this student's specific electives
+    elec_session_ids = set()
+    if elec_subject_ids:
+        elec_allocs = Allocation.query.join(Subject).filter(
+            Allocation.subjectID.in_(elec_subject_ids),
+            Subject.is_elective == True
+        ).all()
+        
+        for a in elec_allocs:
+            elec_info = elec_lookup.get(a.subjectID)
+            if elec_info:
+                div_match = (a.targetDivision == elec_info.elective_div.strip())
+                batch_match = (a.targetBatch == 'All' or a.targetBatch == elec_info.elective_batch.strip())
+                if div_match and batch_match:
+                    elec_session_ids.add(a.sessionID)
+    
+    # Combined: sessions that have forms for this student
+    sessions_with_forms = core_session_ids | elec_session_ids
+    
+    # 3. Bulk fetch all TokenLogs for this student
+    all_token_logs = TokenLog.query.filter_by(studentID=user.userID).all()
+    token_log_map = {tl.sessionID: tl for tl in all_token_logs}
+    
+    # 4. Bulk fetch all ActiveTokenMaps for this student
+    all_active_maps = ActiveTokenMap.query.filter_by(studentID=user.userID).all()
+    active_map_dict = {am.sessionID: am.tokenCode for am in all_active_maps}
     
     # --- PART A: ACTIVE SESSIONS ---
     all_active_sessions = Session.query.filter_by(status=1).all()
     dashboard_data = []
     
     for s in all_active_sessions:
-        has_forms = False
+        if s.sessionID not in sessions_with_forms:
+            continue
         
-        # 1. STRICT CHECK: Look for Core (Regular) Subjects only
-        core_form = Allocation.query.join(Subject).filter(
-            Allocation.sessionID == s.sessionID,
-            Allocation.targetSemester == user.semester,
-            Allocation.targetDivision == str(user.division),
-            or_(Allocation.targetBatch == 'All', Allocation.targetBatch == user.batch),
-            Subject.is_elective == False
-        ).first()
-
-        if core_form:
-            has_forms = True
-        elif student_electives:
-            # 2. STRICT CHECK: Look for this student's specific Electives
-            for elec in student_electives:
-                elec_form = Allocation.query.join(Subject).filter(
-                    Allocation.sessionID == s.sessionID,
-                    Allocation.subjectID == elec.subjectID,
-                    Allocation.targetDivision == elec.elective_div.strip(),
-                    or_(Allocation.targetBatch == 'All', Allocation.targetBatch == elec.elective_batch.strip()),
-                    Subject.is_elective == True
-                ).first()
-                if elec_form:
-                    has_forms = True
-                    break
-
-        # --- THE MAGIC FIX: Hide the session if no forms exist for this student ---
-        if not has_forms:
-            continue 
-
-        t_log = TokenLog.query.filter_by(studentID=user.userID, sessionID=s.sessionID).first()
+        t_log = token_log_map.get(s.sessionID)
         status = 'new'
         token_code = None
         
@@ -62,8 +85,7 @@ def student_dashboard():
             if t_log.is_submitted: status = 'submitted'
             elif t_log.has_generated:
                 status = 'pending'
-                active_map = ActiveTokenMap.query.filter_by(studentID=user.userID, sessionID=s.sessionID).first()
-                if active_map: token_code = active_map.tokenCode
+                token_code = active_map_dict.get(s.sessionID)
 
         dashboard_data.append({'session': s, 'status': status, 'token': token_code})
 
@@ -72,37 +94,10 @@ def student_dashboard():
     history_data = []
 
     for s in raw_history:
-        has_forms_hist = False
-        
-        # 1. Check Core History
-        core_hist = Allocation.query.join(Subject).filter(
-            Allocation.sessionID == s.sessionID,
-            Allocation.targetSemester == user.semester,
-            Allocation.targetDivision == str(user.division),
-            or_(Allocation.targetBatch == 'All', Allocation.targetBatch == user.batch),
-            Subject.is_elective == False
-        ).first()
+        if s.sessionID not in sessions_with_forms:
+            continue
 
-        if core_hist:
-            has_forms_hist = True
-        elif student_electives:
-            # 2. Check Elective History
-            for elec in student_electives:
-                elec_hist = Allocation.query.join(Subject).filter(
-                    Allocation.sessionID == s.sessionID,
-                    Allocation.subjectID == elec.subjectID,
-                    Allocation.targetDivision == elec.elective_div.strip(),
-                    or_(Allocation.targetBatch == 'All', Allocation.targetBatch == elec.elective_batch.strip()),
-                    Subject.is_elective == True
-                ).first()
-                if elec_hist:
-                    has_forms_hist = True
-                    break
-
-        if not has_forms_hist: 
-            continue 
-
-        t_log = TokenLog.query.filter_by(studentID=user.userID, sessionID=s.sessionID).first()
+        t_log = token_log_map.get(s.sessionID)
         status = 'completed' if (t_log and t_log.is_submitted) else 'missed'
         history_data.append({'session': s, 'status': status})
 
