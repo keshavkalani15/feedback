@@ -20,4 +20,4 @@ class Config:
     # SQLAlchemy Config
     SQLALCHEMY_DATABASE_URI = f'mysql+pymysql://{DB_USERNAME}:{encoded_password}@{DB_HOST}/{DB_NAME}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {'pool_recycle': 280}
+    SQLALCHEMY_ENGINE_OPTIONS = {'pool_recycle': 280, 'pool_size': 20, 'max_overflow': 50}

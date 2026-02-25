@@ -45,11 +45,11 @@ def start_production_server():
     try:
         # Port 80 is standard HTTP. If it requires admin privileges and fails,
         # users can change this to 5000 or 8080.
-        serve(app_logged, host='0.0.0.0', port=80, threads=6)
+        serve(app_logged, host='0.0.0.0', port=80, threads=32)
     except OSError as e:
         print(f"\n❌ Port 80 is already in use or requires Administrator privileges.")
         print(f"   Falling back to port 5000...")
-        serve(app_logged, host='0.0.0.0', port=5000, threads=6)
+        serve(app_logged, host='0.0.0.0', port=5000, threads=32)
 
 if __name__ == '__main__':
     start_production_server()
