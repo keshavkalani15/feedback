@@ -218,7 +218,7 @@ def upload_students_csv():
             prn = row_clean.get('prn')
             name = row_clean.get('name')
             batch = row_clean.get('batch')
-            elec_sub_raw = row_clean.get('elective_subject', '')  # Pipe-separated: "Deep Learning|Cloud Computing"
+            elec_sub_raw = row_clean.get('elective_subject', '')  # Backward compat: single column
             elec_div_raw = row_clean.get('elective_div', '')
             elec_batch_raw = row_clean.get('elective_batch', '')
 
@@ -239,25 +239,40 @@ def upload_students_csv():
                 student.semester = str(allocation.semester)
                 student.division = allocation.division
             
-            # 2. Handle N-Elective Assignment (Pipe-separated)
-            if elec_sub_raw:
-                elec_names = [x.strip() for x in elec_sub_raw.split('|') if x.strip()]
-                elec_divs = [x.strip() for x in elec_div_raw.split('|')] if elec_div_raw else []
-                elec_batches = [x.strip() for x in elec_batch_raw.split('|')] if elec_batch_raw else []
-                
+            # 2. Handle N-Elective Assignment (Numbered Columns)
+            # Collect electives from numbered columns: elective_subject_1, elective_subject_2, ...
+            elective_entries = []
+            
+            # First try numbered columns
+            idx = 1
+            while True:
+                e_name = row_clean.get(f'elective_subject_{idx}', '').strip()
+                if not e_name and idx > 1:
+                    break  # No more numbered columns
+                if e_name:
+                    e_div = row_clean.get(f'elective_div_{idx}', '').strip()
+                    e_batch = row_clean.get(f'elective_batch_{idx}', '').strip()
+                    elective_entries.append((e_name, e_div, e_batch))
+                idx += 1
+                if idx > 10:  # Safety cap
+                    break
+            
+            # Fallback: old single-column format (backward compat)
+            if not elective_entries and elec_sub_raw:
+                elective_entries.append((elec_sub_raw, elec_div_raw, elec_batch_raw))
+            
+            if elective_entries:
                 # Clear existing electives to re-assign
                 StudentElective.query.filter_by(studentPRN=prn).delete()
                 
-                for idx, elec_name in enumerate(elec_names):
+                for e_name, e_div, e_batch in elective_entries:
                     subject = Subject.query.filter(
-                        Subject.subjectName.ilike(f"%{elec_name}%"), 
+                        Subject.subjectName.ilike(f"%{e_name}%"), 
                         Subject.is_elective == True,
                         Subject.semester == allocation.semester
                     ).first()
                     
                     if subject:
-                        e_div = elec_divs[idx] if idx < len(elec_divs) else allocation.division
-                        e_batch = elec_batches[idx] if idx < len(elec_batches) else batch
                         assign_twin_electives(prn, subject.subjectID, e_div or allocation.division, e_batch or batch)
             count += 1
         
@@ -277,8 +292,30 @@ def download_sample_students():
     if session.get('role') != 'teacher': 
         return redirect(url_for('auth.login'))
     
-    # Shows pipe-separated format for multiple electives
-    csv_data = "PRN,Name,Batch,Elective_Subject,Elective_Div,Elective_Batch\nF23112001,Alice Johnson,P,Deep Learning|Cloud Computing,2|1,EB1|EB2\nF23112002,Bob Smith,Q,Cloud Computing,1,EB1\nF23112003,Carol Davis,R,,,\n"
+    # Dynamic sample CSV based on semester's elective count
+    user = User.query.get(session['user_id'])
+    allocation = ClassTeacherAllocation.query.filter_by(teacherID=user.userID).first()
+    elective_count = 0
+    if allocation:
+        config = SemesterConfig.query.get(allocation.semester)
+        if config:
+            elective_count = config.elective_count
+    
+    # Build header
+    header = "PRN,Name,Batch"
+    for i in range(1, elective_count + 1):
+        header += f",Elective_Subject_{i},Elective_Div_{i},Elective_Batch_{i}"
+    
+    # Build sample rows
+    sample_electives = ["Deep Learning", "Cloud Computing", "Block Chain", "AI/ML"]
+    row1_elecs = ""
+    row2_elecs = ""
+    for i in range(elective_count):
+        sub_name = sample_electives[i] if i < len(sample_electives) else f"Elective{i+1}"
+        row1_elecs += f",{sub_name},{i+1},EB{i+1}"
+        row2_elecs += ",,,"  # empty elective for 2nd student
+    
+    csv_data = f"{header}\nF23112001,Alice Johnson,P{row1_elecs}\nF23112002,Bob Smith,Q{row2_elecs}\n"
     
     return Response(
         csv_data,
