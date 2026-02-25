@@ -3,12 +3,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 from sqlalchemy.exc import IntegrityError
 import io
-from app.models import StudentElective, db, User, Session, Subject, Allocation, ClassTeacherAllocation, TokenLog, FeedbackResult
+from app.models import StudentElective, db, User, Session, Subject, Allocation, ClassTeacherAllocation, TokenLog, FeedbackResult, FeedbackComment, ReportApproval, SemesterConfig
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from app.utils import load_questions
 import re
-from app.models import FeedbackComment # Make sure this is in your imports
 
 
 admin_bp = Blueprint('admin', __name__)
@@ -911,6 +910,45 @@ def teacher_report(session_id, teacher_id):
     # Note: We no longer need to pass 'comments=comments' at the end because they are inside 'reports' now!
     return render_template('admin/teacher_report.html', curr_session=curr_session, teacher=teacher, reports=reports)
 
+
+# ==========================================
+# SEMESTER ELECTIVE CONFIG
+# ==========================================
+@admin_bp.route('/semester_config', methods=['GET', 'POST'])
+def semester_config():
+    if session.get('role') != 'admin': return redirect(url_for('auth.login'))
+    
+    if request.method == 'POST':
+        try:
+            for sem in range(1, 9):
+                count = int(request.form.get(f'sem_{sem}', 0))
+                config = SemesterConfig.query.get(sem)
+                if config:
+                    config.elective_count = count
+                else:
+                    db.session.add(SemesterConfig(semester=sem, elective_count=count))
+            db.session.commit()
+            flash("Semester elective config updated.", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error: {e}", "danger")
+        return redirect(url_for('admin.semester_config'))
+    
+    # Build config dict for all 8 semesters
+    configs = {c.semester: c.elective_count for c in SemesterConfig.query.all()}
+    sem_data = []
+    for sem in range(1, 9):
+        sem_data.append({'semester': sem, 'elective_count': configs.get(sem, 0)})
+    
+    return render_template('admin/semester_config.html', sem_data=sem_data)
+
+@admin_bp.route('/api/semester_config/<int:sem>')
+def get_semester_config(sem):
+    """API route for teacher forms to fetch elective count via AJAX."""
+    if session.get('role') not in ('admin', 'teacher', 'HOD'):
+        return jsonify({'error': 'Unauthorized'}), 401
+    config = SemesterConfig.query.get(sem)
+    return jsonify({'semester': sem, 'elective_count': config.elective_count if config else 0})
 
 # ==========================================
 # DOWNLOAD SAMPLE CSVs (ADMIN)

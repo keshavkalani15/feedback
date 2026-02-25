@@ -260,13 +260,16 @@
 
 
 
-      {% if elective_name %}
-      <div class="info-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);">
-        <span>Elective:&emsp;</span>
+      {% if elective_list %}
+      {% for elec in elective_list %}
+      <div class="info-row"
+        style="{% if loop.first %}margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.2);{% endif %}">
+        <span>Elective {{ loop.index }}:&emsp;</span>
         <span>
-          {{ elective_name }} - {{ elective_data.elective_div }} [{{ elective_data.elective_batch }}]
+          {{ elec.name }} - {{ elec.div }} [{{ elec.batch }}]
         </span>
       </div>
+      {% endfor %}
       {% endif %}
     </div>
 

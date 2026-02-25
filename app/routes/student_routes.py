@@ -101,20 +101,23 @@ def student_dashboard():
         status = 'completed' if (t_log and t_log.is_submitted) else 'missed'
         history_data.append({'session': s, 'status': status})
 
-    # UI Name Cleanup for Elective
-    display_elective_name = None
-    if student_electives:
-        first_sub = Subject.query.get(student_electives[0].subjectID)
-        if first_sub:
-            clean_name = first_sub.subjectName.replace('Theory', '').replace('Practical', '').replace('()', '').replace('-', '').strip()
-            display_elective_name = clean_name
+    # UI Name Cleanup for Electives — build list of ALL assigned electives
+    elective_list = []
+    for se in student_electives:
+        sub = Subject.query.get(se.subjectID)
+        if sub:
+            clean_name = sub.subjectName.replace('Theory', '').replace('Practical', '').replace('()', '').replace('-', '').strip()
+            elective_list.append({
+                'name': clean_name,
+                'div': se.elective_div,
+                'batch': se.elective_batch
+            })
 
     return render_template('student.html', 
                            user=user, 
                            dashboard_data=dashboard_data, 
                            history_data=history_data, 
-                           elective_name=display_elective_name,
-                           elective_data=student_electives[0] if student_electives else None) # <--- ADD THIS
+                           elective_list=elective_list)
 
 
 @student_bp.route('/feedback')

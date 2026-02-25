@@ -108,3 +108,8 @@ class ReportApproval(db.Model):
     allocationID = db.Column(db.Integer, db.ForeignKey('allocations.allocationID', ondelete='CASCADE'), nullable=True, index=True)
     teacher_agreed = db.Column(db.Boolean, default=False)
     hod_approved = db.Column(db.Boolean, default=False)
+
+class SemesterConfig(db.Model):
+    __tablename__ = 'semester_config'
+    semester = db.Column(db.Integer, primary_key=True)
+    elective_count = db.Column(db.Integer, default=0, nullable=False)

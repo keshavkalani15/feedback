@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, session, redirect, url_for, flash, request, Response
-from app.models import FeedbackResult, db, User, Session, Allocation, ClassTeacherAllocation, StudentElective, Subject, ReportApproval, FeedbackComment
+from app.models import FeedbackResult, db, User, Session, Allocation, ClassTeacherAllocation, StudentElective, Subject, ReportApproval, FeedbackComment, SemesterConfig
 from werkzeug.security import generate_password_hash
 import csv
 import io
@@ -122,14 +122,19 @@ def manage_students():
         ).order_by(User.prn_empID).all()
     
     elective_subjects = []
+    elective_count = 0
     if allocation:
         elective_subjects = Subject.query.filter_by(is_elective=True, subjectType='Theory', semester=allocation.semester).all()
+        config = SemesterConfig.query.get(allocation.semester)
+        if config:
+            elective_count = config.elective_count
     
     return render_template('teacher/manage_students.html', 
                            students=students, 
                            allocation=allocation, 
                            total_count=len(students),
-                           elective_subjects=elective_subjects)
+                           elective_subjects=elective_subjects,
+                           elective_count=elective_count)
 
 @teacher_bp.route('/add_student', methods=['POST'])
 def add_student():
@@ -146,16 +151,6 @@ def add_student():
     name = request.form.get('name')
     batch = request.form.get('batch') 
 
-    # Parse Subject ID from "Subject Name (ID: 101)" string
-    subject_raw = request.form.get('subject_search')
-    subject_id = None
-    if subject_raw and "(ID: " in subject_raw:
-        match = re.search(r'\(ID:\s*(\d+)\)', subject_raw)
-        if match: subject_id = int(match.group(1))
-
-    elec_div = request.form.get('elective_div')
-    elec_batch = request.form.get('elective_batch')
-
     if User.query.filter_by(prn_empID=prn).first():
         flash(f"Student {prn} already exists.", "danger")
     else:
@@ -167,14 +162,30 @@ def add_student():
             )
             db.session.add(new_student)
 
-            # --- UPDATED LOGIC START ---
-            if subject_id:
-                # Use our smart helper to assign both Theory and Practical
-                assign_twin_electives(prn, subject_id, elec_div or allocation.division, elec_batch or batch)
-            # --- UPDATED LOGIC END ---
+            # --- DYNAMIC N-ELECTIVE LOGIC ---
+            collected_ids = []
+            i = 0
+            while True:
+                subject_raw = request.form.get(f'subject_search_{i}')
+                if subject_raw is None:
+                    break
+                subject_id = None
+                if subject_raw and "(ID: " in subject_raw:
+                    match = re.search(r'\(ID:\s*(\d+)\)', subject_raw)
+                    if match: subject_id = int(match.group(1))
+                if subject_id:
+                    if subject_id in collected_ids:
+                        flash("Error: Same elective subject selected more than once.", "danger")
+                        db.session.rollback()
+                        return redirect(url_for('teacher.manage_students'))
+                    collected_ids.append(subject_id)
+                    elec_div = request.form.get(f'elective_div_{i}')
+                    elec_batch = request.form.get(f'elective_batch_{i}')
+                    assign_twin_electives(prn, subject_id, elec_div or allocation.division, elec_batch or batch)
+                i += 1
         
             db.session.commit()
-            flash(f"Student Registered & Elective Assigned.", "success")
+            flash(f"Student Registered & Electives Assigned.", "success")
         except Exception as e:
             db.session.rollback()
             flash(f"Error: {e}", "danger")
@@ -207,9 +218,9 @@ def upload_students_csv():
             prn = row_clean.get('prn')
             name = row_clean.get('name')
             batch = row_clean.get('batch')
-            elec_sub_name = row_clean.get('elective_subject') # Name from CSV (e.g. "Deep Learning")
-            elec_div = row_clean.get('elective_div')
-            elec_batch = row_clean.get('elective_batch')
+            elec_sub_raw = row_clean.get('elective_subject', '')  # Pipe-separated: "Deep Learning|Cloud Computing"
+            elec_div_raw = row_clean.get('elective_div', '')
+            elec_batch_raw = row_clean.get('elective_batch', '')
 
             if not prn or not name: continue
 
@@ -217,39 +228,37 @@ def upload_students_csv():
             student = User.query.filter_by(prn_empID=prn).first()
             
             if not student:
-                # Student does not exist -> Create new
                 student = User(
                     prn_empID=prn, name=name, role='student', password=default_pw_hash,
                     semester=str(allocation.semester), division=allocation.division, batch=batch
                 )
                 db.session.add(student)
             else:
-                # Student exists -> Update their details!
                 student.name = name
                 student.batch = batch
                 student.semester = str(allocation.semester)
                 student.division = allocation.division
             
-            # 2. Handle Elective Assignment
-            if elec_sub_name:
-                # Fuzzy search the subject name
-                subject = Subject.query.filter(
-                    Subject.subjectName.ilike(f"%{elec_sub_name}%"), 
-                    Subject.is_elective == True,
-                    Subject.semester == allocation.semester
-                ).first()
+            # 2. Handle N-Elective Assignment (Pipe-separated)
+            if elec_sub_raw:
+                elec_names = [x.strip() for x in elec_sub_raw.split('|') if x.strip()]
+                elec_divs = [x.strip() for x in elec_div_raw.split('|')] if elec_div_raw else []
+                elec_batches = [x.strip() for x in elec_batch_raw.split('|')] if elec_batch_raw else []
                 
-                if subject:
-                    # Clear ANY existing electives to avoid duplicates/conflicts
-                    StudentElective.query.filter_by(studentPRN=prn).delete()
+                # Clear existing electives to re-assign
+                StudentElective.query.filter_by(studentPRN=prn).delete()
+                
+                for idx, elec_name in enumerate(elec_names):
+                    subject = Subject.query.filter(
+                        Subject.subjectName.ilike(f"%{elec_name}%"), 
+                        Subject.is_elective == True,
+                        Subject.semester == allocation.semester
+                    ).first()
                     
-                    # --- UPDATED LOGIC: Use Smart Helper ---
-                    assign_twin_electives(
-                        prn, 
-                        subject.subjectID, 
-                        elec_div or allocation.division, 
-                        elec_batch or batch
-                    )
+                    if subject:
+                        e_div = elec_divs[idx] if idx < len(elec_divs) else allocation.division
+                        e_batch = elec_batches[idx] if idx < len(elec_batches) else batch
+                        assign_twin_electives(prn, subject.subjectID, e_div or allocation.division, e_batch or batch)
             count += 1
         
         db.session.commit()
@@ -268,8 +277,8 @@ def download_sample_students():
     if session.get('role') != 'teacher': 
         return redirect(url_for('auth.login'))
     
-    # Shows an example of a student with an elective, and one without
-    csv_data = "PRN,Name,Batch,Elective_Subject,Elective_Div,Elective_Batch\nF23112001,Alice Johnson,B1,Deep Learning,2,EB1\nF23112002,Bob Smith,B2,,,\n"
+    # Shows pipe-separated format for multiple electives
+    csv_data = "PRN,Name,Batch,Elective_Subject,Elective_Div,Elective_Batch\nF23112001,Alice Johnson,P,Deep Learning|Cloud Computing,2|1,EB1|EB2\nF23112002,Bob Smith,Q,Cloud Computing,1,EB1\nF23112003,Carol Davis,R,,,\n"
     
     return Response(
         csv_data,
@@ -290,7 +299,21 @@ def edit_student(user_id):
         flash("Access Denied.", "danger")
         return redirect(url_for('teacher.manage_students'))
 
-    current_elective = StudentElective.query.filter_by(studentPRN=student.prn_empID).first()
+    current_electives = StudentElective.query.filter_by(studentPRN=student.prn_empID).all()
+    # Deduplicate: only show Theory subjects (twins are auto-managed)
+    seen_ids = set()
+    unique_electives = []
+    for ce in current_electives:
+        if ce.subject and ce.subject.subjectType == 'Theory':
+            if ce.subjectID not in seen_ids:
+                seen_ids.add(ce.subjectID)
+                unique_electives.append(ce)
+        elif ce.subjectID not in seen_ids:
+            # Check if it has a linked Theory twin — if so, skip (we show the Theory)
+            linked = Subject.query.filter_by(linked_subject_id=ce.subjectID, subjectType='Theory').first()
+            if not linked:
+                seen_ids.add(ce.subjectID)
+                unique_electives.append(ce)
 
     if request.method == 'POST':
         batch = request.form.get('batch')
@@ -305,40 +328,48 @@ def edit_student(user_id):
         if request.form.get('password'):
             student.password = generate_password_hash(request.form['password'], method='pbkdf2:sha256')
 
-        # Parse Subject
-        subject_raw = request.form.get('subject_search')
-        subject_id = None
-        if subject_raw and "(ID: " in subject_raw:
-            match = re.search(r'\(ID:\s*(\d+)\)', subject_raw)
-            if match: subject_id = int(match.group(1))
+        # --- DYNAMIC N-ELECTIVE LOGIC ---
+        # 1. Collect and validate
+        collected_ids = []
+        elective_data = []
+        i = 0
+        while True:
+            subject_raw = request.form.get(f'subject_search_{i}')
+            if subject_raw is None:
+                break
+            subject_id = None
+            if subject_raw and "(ID: " in subject_raw:
+                match = re.search(r'\(ID:\s*(\d+)\)', subject_raw)
+                if match: subject_id = int(match.group(1))
+            if subject_id:
+                if subject_id in collected_ids:
+                    flash("Error: Same elective subject selected more than once.", "danger")
+                    return redirect(url_for('teacher.edit_student', user_id=user_id))
+                collected_ids.append(subject_id)
+                elective_data.append((subject_id, request.form.get(f'elective_div_{i}'), request.form.get(f'elective_batch_{i}')))
+            i += 1
 
-        # --- UPDATED LOGIC START ---
-        if subject_id:
-            # 1. Remove all old electives for this student
-            StudentElective.query.filter_by(studentPRN=student.prn_empID).delete()
-            
-            # 2. Assign the new Twin Pair
-            assign_twin_electives(
-                student.prn_empID, 
-                subject_id, 
-                request.form.get('elective_div'), 
-                request.form.get('elective_batch')
-            )
-        elif not subject_raw: 
-            # If the teacher CLEARED the search box, remove the elective
-            StudentElective.query.filter_by(studentPRN=student.prn_empID).delete()
-        # --- UPDATED LOGIC END ---
+        # 2. Remove all old electives
+        StudentElective.query.filter_by(studentPRN=student.prn_empID).delete()
+        
+        # 3. Re-assign
+        for sid, ediv, ebatch in elective_data:
+            assign_twin_electives(student.prn_empID, sid, ediv, ebatch)
 
         db.session.commit()
         flash("Profile updated.", "success")
         return redirect(url_for('teacher.manage_students'))
 
     elective_subjects = Subject.query.filter_by(is_elective=True, subjectType='Theory', semester=allocation.semester).all()
+    config = SemesterConfig.query.get(allocation.semester)
+    elective_count = config.elective_count if config else 0
+    
     return render_template('teacher/edit_student.html', 
                            student=student, 
                            allocation=allocation, 
                            elective_subjects=elective_subjects,
-                           current_elective=current_elective)
+                           current_electives=unique_electives,
+                           elective_count=elective_count)
 
 @teacher_bp.route('/delete_student/<int:user_id>', methods=['POST'])
 def delete_student(user_id):

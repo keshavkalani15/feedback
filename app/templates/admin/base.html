@@ -43,6 +43,7 @@
             padding: 25px;
             box-shadow: 4px 0 10px rgba(0, 0, 0, 0.05);
             z-index: 10;
+            overflow: hidden;
         }
 
         .sidebar h2 {
@@ -54,6 +55,17 @@
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 20px;
+        }
+
+        .nav-links {
+            flex: 1;
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .nav-links::-webkit-scrollbar {
+            display: none;
         }
 
         .nav-links a {
@@ -273,6 +285,8 @@
             <a href="/admin/results" class="{{ 'active' if request.path.startswith('/admin/results') }}">View Results
                 <span>›</span></a>
             <a href="/admin/promote" class="{{ 'active' if 'promote' in request.path }}">Promote Students
+                <span>›</span></a>
+            <a href="/admin/semester_config" class="{{ 'active' if 'semester_config' in request.path }}">Semester Config
                 <span>›</span></a>
             <a href="/admin/change_password" class="{{ 'active' if 'password' in request.path }}">Change Password
                 <span>›</span></a>
