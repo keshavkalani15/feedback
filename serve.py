@@ -1,9 +1,12 @@
 from app import create_app, db
 from run import create_database_if_not_exists
 from create_hod import create_hod_account
+from backup import run_backup
 from waitress import serve
 import sys
 import logging
+import threading
+import time
 from paste.translogger import TransLogger
 
 def start_production_server():
@@ -27,6 +30,24 @@ def start_production_server():
         except Exception as e:
             print(f"❌ Error creating tables: {e}")
             sys.exit(1)
+    
+    # 3. Run backup on startup
+    try:
+        run_backup()
+    except Exception as e:
+        print(f"⚠️ Backup skipped: {e}")
+    
+    # 4. Schedule daily backup in background
+    def daily_backup_loop():
+        while True:
+            time.sleep(86400)  # 24 hours
+            try:
+                run_backup()
+            except Exception as e:
+                print(f"⚠️ Scheduled backup failed: {e}")
+    
+    backup_thread = threading.Thread(target=daily_backup_loop, daemon=True)
+    backup_thread.start()
             
     # 3. Start Waitress Server
     print("✅ Starting Waitress WSGI server...")

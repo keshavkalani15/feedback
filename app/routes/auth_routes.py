@@ -1,9 +1,52 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.models import db, User
+import logging
+import os
+from datetime import datetime
 
 # Define the Blueprint
 auth_bp = Blueprint('auth', __name__)
+
+# --- LOGIN AUDIT LOGGER ---
+_log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'logs')
+os.makedirs(_log_dir, exist_ok=True)
+
+login_logger = logging.getLogger('login_audit')
+login_logger.setLevel(logging.INFO)
+_handler = logging.FileHandler(os.path.join(_log_dir, 'login_audit.log'), encoding='utf-8')
+_handler.setFormatter(logging.Formatter('%(message)s'))
+login_logger.addHandler(_handler)
+login_logger.propagate = False
+
+def _short_browser(ua_string):
+    """Extract short browser name from user agent string."""
+    ua = ua_string.lower()
+    if 'edg/' in ua:
+        ver = ua.split('edg/')[-1].split(' ')[0].split('.')[0]
+        return f'Edge {ver}'
+    elif 'opr/' in ua or 'opera' in ua:
+        ver = ua.split('opr/')[-1].split(' ')[0].split('.')[0] if 'opr/' in ua else ''
+        return f'Opera {ver}'.strip()
+    elif 'chrome/' in ua:
+        ver = ua.split('chrome/')[-1].split(' ')[0].split('.')[0]
+        return f'Chrome {ver}'
+    elif 'firefox/' in ua:
+        ver = ua.split('firefox/')[-1].split(' ')[0].split('.')[0]
+        return f'Firefox {ver}'
+    elif 'safari/' in ua and 'chrome' not in ua:
+        return 'Safari'
+    return ua_string[:30]
+
+def log_login(prn, role, status, ip, user_agent):
+    """Log a login attempt to the audit file."""
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # Get real client IP (supports reverse proxy via X-Forwarded-For)
+    real_ip = request.headers.get('X-Forwarded-For', ip).split(',')[0].strip()
+    browser = _short_browser(user_agent)
+    login_logger.info(
+        f'{timestamp} | {status:<7} | {role:<8} | {prn:<15} | {real_ip:<15} | {browser}'
+    )
 
 @auth_bp.route('/')
 def index():
@@ -25,6 +68,8 @@ def login():
             session['user_name'] = user.name
             session['user_empid'] = user.prn_empID
             
+            log_login(username, role, 'SUCCESS', request.remote_addr, request.user_agent.string)
+            
             if role == 'student': 
                 return redirect(url_for('student.student_dashboard'))
             
@@ -34,6 +79,7 @@ def login():
             elif role == 'teacher':
                 return redirect(url_for('teacher.dashboard'))
             
+        log_login(username, role, 'FAILED', request.remote_addr, request.user_agent.string)
         return render_template('login.html', error="Invalid Credentials")
     return render_template('login.html')
 
@@ -53,8 +99,11 @@ def management_login():
             session['name'] = user.prn_empID
             session['user_name'] = user.name
             session['user_empid'] = user.prn_empID
+            
+            log_login(username, 'HOD', 'SUCCESS', request.remote_addr, request.user_agent.string)
             return redirect(url_for('hod.dashboard'))
             
+        log_login(username, 'HOD', 'FAILED', request.remote_addr, request.user_agent.string)
         return render_template('management_login.html', error="Invalid Credentials")
     return render_template('management_login.html')
 
