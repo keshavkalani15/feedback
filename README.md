@@ -140,18 +140,18 @@ Backups are saved to the `backups/` directory. Only the last 7 days of backups a
 
 ## 🔐 Getting Started — First-Time Setup
 
-### 1. Create the Root HOD Account
+### 1. Root HOD Account (Auto-Created)
 
-Run the setup script (edit credentials in `create_hod.py` first if needed):
-```bash
-python create_hod.py
-```
+The root HOD account is **automatically created** the first time you start the server (`python run.py` or `python serve.py`). No manual setup is needed.
 
 **Default HOD credentials:**
 | Field | Value |
 |---|---|
-| ID | `HOD123` |
-| Password | `HOD123` |
+| ID | `HOD101` |
+| Password | `HOD@123` |
+
+> [!IMPORTANT]
+> Change the default HOD password after your first login. To customize the initial credentials, edit `create_hod.py` before the first server start.
 
 ### 2. Setup Hierarchy
 
