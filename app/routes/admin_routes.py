@@ -669,7 +669,6 @@ def update_teacher(user_id):
     if session.get('role') != 'admin': return redirect(url_for('auth.login'))
     teacher = User.query.get_or_404(user_id)
     
-    teacher.prn_empID = request.form['prn']
     teacher.name = request.form['name']
     
     new_pass = request.form.get('password')

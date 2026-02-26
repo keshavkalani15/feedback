@@ -101,17 +101,20 @@ def student_dashboard():
         status = 'completed' if (t_log and t_log.is_submitted) else 'missed'
         history_data.append({'session': s, 'status': status})
 
-    # UI Name Cleanup for Electives — build list of ALL assigned electives
+    # UI Name Cleanup for Electives — deduplicate Theory/Practical pairs
     elective_list = []
+    seen_elective_names = set()
     for se in student_electives:
         sub = Subject.query.get(se.subjectID)
         if sub:
             clean_name = sub.subjectName.replace('Theory', '').replace('Practical', '').replace('()', '').replace('-', '').strip()
-            elective_list.append({
-                'name': clean_name,
-                'div': se.elective_div,
-                'batch': se.elective_batch
-            })
+            if clean_name not in seen_elective_names:
+                seen_elective_names.add(clean_name)
+                elective_list.append({
+                    'name': clean_name,
+                    'div': se.elective_div,
+                    'batch': se.elective_batch
+                })
 
     return render_template('student.html', 
                            user=user, 
