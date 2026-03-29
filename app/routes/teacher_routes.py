@@ -547,7 +547,14 @@ def session_report(session_id):
         })
 
         # --- D. CALCULATE PER-CLASS (DIV/BATCH) STATS ---
-        for alloc in data['allocations']:
+        def _sort_alloc(a):
+            b_map = {'All': 0, 'P': 1, 'Q': 2, 'R': 3}
+            b = b_map.get(a.targetBatch, 99)
+            try: d = float(a.targetDivision)
+            except (ValueError, TypeError): d = 999.0
+            return (a.targetSemester, d, str(a.targetDivision), b, str(a.targetBatch))
+
+        for alloc in sorted(data['allocations'], key=_sort_alloc):
             class_stats_query = db.session.query(
                 FeedbackResult.questionID, 
                 func.avg(FeedbackResult.rating),
@@ -595,6 +602,72 @@ def session_report(session_id):
                            reports=reports, 
                            approval_dict=approval_dict,
                            teacher=user)
+
+@teacher_bp.route('/agree_all', methods=['POST'])
+def agree_all():
+    """Agree to ALL subjects for a session at once."""
+    if session.get('role') != 'teacher':
+        return redirect(url_for('auth.login'))
+
+    session_id = request.form.get('session_id')
+    teacher_id = session['user_id']
+
+    sess_obj = Session.query.get(session_id)
+    if sess_obj and sess_obj.status != 2:
+        flash("Agreement is only available after the session is terminated.", "danger")
+        return redirect(request.referrer)
+
+    # Get all unique subjects this teacher teaches in this session
+    subject_ids = db.session.query(Allocation.subjectID).filter_by(
+        teacherID=teacher_id, sessionID=session_id
+    ).distinct().all()
+    subject_ids = [s[0] for s in subject_ids]
+
+    agreed_count = 0
+    for sub_id in subject_ids:
+        # Agree to the overall record (allocationID=None)
+        overall = ReportApproval.query.filter_by(
+            sessionID=session_id, teacherID=teacher_id,
+            subjectID=sub_id, allocationID=None
+        ).first()
+        if not overall:
+            overall = ReportApproval(
+                sessionID=session_id, teacherID=teacher_id,
+                subjectID=sub_id, allocationID=None, teacher_agreed=True
+            )
+            db.session.add(overall)
+            agreed_count += 1
+        elif not overall.teacher_agreed:
+            overall.teacher_agreed = True
+            agreed_count += 1
+
+        # Also agree each individual class allocation
+        child_ids = [
+            row[0] for row in
+            db.session.query(Allocation.allocationID).filter_by(
+                teacherID=teacher_id, subjectID=sub_id, sessionID=session_id
+            ).all()
+        ]
+        for child_id in child_ids:
+            child = ReportApproval.query.filter_by(
+                sessionID=session_id, teacherID=teacher_id,
+                subjectID=sub_id, allocationID=child_id
+            ).first()
+            if child:
+                child.teacher_agreed = True
+            else:
+                db.session.add(ReportApproval(
+                    sessionID=session_id, teacherID=teacher_id,
+                    subjectID=sub_id, allocationID=child_id, teacher_agreed=True
+                ))
+
+    db.session.commit()
+    if agreed_count:
+        flash(f"Agreed to {agreed_count} subject(s) successfully.", "success")
+    else:
+        flash("All subjects were already agreed.", "info")
+    return redirect(request.referrer)
+
 
 @teacher_bp.route('/agree_report', methods=['POST'])
 def agree_report():

@@ -52,6 +52,17 @@
     }
     .teacher-card.status-approved .status-icon::before { content: "★"; }
 
+    /* ── Status: PARTIAL — some agreed (HOD pending) + some unagreed → yellow ── */
+    .teacher-card.status-partial {
+        background: linear-gradient(135deg, #fef9c3 0%, #fffff0 100%);
+        border-color: #facc15;
+    }
+    .teacher-card.status-partial .status-badge {
+        background: #eab308;
+        color: #fff;
+    }
+    .teacher-card.status-partial .status-icon::before { content: "◑"; }
+
     /* ── Status badge pill ── */
     .status-badge {
         font-size: 0.7rem;
@@ -87,24 +98,39 @@
 <!-- Header -->
 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
     <a href="{{ url_for('hod.view_results') }}" class="btn btn-sm btn-blue" style="background: #64748b;">← Sessions</a>
-    <h2 class="page-title" style="margin: 0;">Teachers: {{ curr_session.sessionName }}</h2>
+    <h2 class="page-title" style="margin: 0;">Approve Results: {{ curr_session.sessionName }}</h2>
 </div>
 
-<!-- Search bar -->
-<input type="text" id="teacherSearch" placeholder="Search Teacher Name or ID..."
-       style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px;
-              margin-bottom: 16px; font-size: 0.95rem; box-sizing: border-box;">
+<!-- Filter Bar -->
+<div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+    <input type="text" id="teacherSearch" placeholder="Search Teacher Name or ID..."
+           style="flex: 1; min-width: 200px; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem;">
 
-<!-- Legend -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <label style="font-weight: 600; color: #64748b; font-size: 0.9rem;">Semester:</label>
+        <select id="semFilter" onchange="applyFilters()"
+                style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+            <option value="all">All</option>
+            {% for s in semesters %}
+            <option value="{{ s }}">Sem {{ s }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
 <div class="legend-bar">
     <span style="font-weight:600; color:#475569;">Legend:</span>
     <span class="legend-item">
         <span class="legend-dot" style="background:#10b981;"></span>
-        Teacher agreed to all results (awaiting HOD approval)
+        All subjects agreed (awaiting HOD approval)
+    </span>
+    <span class="legend-item">
+        <span class="legend-dot" style="background:#eab308;"></span>
+        Partially agreed &amp; HOD approval pending
     </span>
     <span class="legend-item">
         <span class="legend-dot" style="background:#ef4444;"></span>
-        Teacher has NOT agreed yet
+        Teacher has not agreed (HOD can do nothing more)
     </span>
     <span class="legend-item">
         <span class="legend-dot" style="background:#94a3b8; border:1px solid #cbd5e1;"></span>
@@ -112,17 +138,20 @@
     </span>
 </div>
 
-<!-- Teacher grid (already sorted server-side: green → red → white) -->
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+<!-- Teacher grid -->
+<div id="teacherGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
     {% for info in teacher_info %}
     {% set t = info.teacher %}
-    <div class="card teacher-card status-{{ info.status }}" style="margin-bottom: 0;">
+    <div class="card teacher-card status-{{ info.status }}" style="margin-bottom: 0;"
+         data-sems="{{ teacher_sems.get(t.userID, []) | tojson }}">
         <div>
             <h3 style="margin: 0 0 2px; font-size: 1rem;">{{ t.name }}</h3>
             <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ t.prn_empID }}</span><br>
             <span class="status-badge status-icon">
                 {% if info.status == 'agreed' %}
-                    Agreed — Awaiting Approval
+                    All Agreed — Awaiting HOD Approval
+                {% elif info.status == 'partial' %}
+                    Partially Agreed
                 {% elif info.status == 'pending' %}
                     Not Yet Agreed
                 {% else %}
@@ -131,18 +160,47 @@
             </span>
         </div>
         <a href="{{ url_for('hod.teacher_report', session_id=curr_session.sessionID, teacher_id=t.userID) }}"
-           class="btn btn-blue btn-sm" style="flex-shrink:0; margin-left:12px;">Analysis ➔</a>
+           class="btn btn-blue btn-sm" style="flex-shrink:0; margin-left:12px;">Approve ➔</a>
     </div>
     {% endfor %}
 </div>
+<div id="teacherEmpty" style="display:none; text-align:center; padding: 40px; color: #94a3b8;">
+    <h3>No teachers found matching your filter.</h3>
+</div>
 
 <script>
-    document.getElementById('teacherSearch').addEventListener('keyup', function () {
-        const filter = this.value.toLowerCase();
+    function applyFilters() {
+        const query = document.getElementById('teacherSearch').value.toLowerCase();
+        const semFilter = document.getElementById('semFilter').value;
+        let visibleCount = 0;
+
         document.querySelectorAll('.teacher-card').forEach(card => {
-            card.style.display = card.innerText.toLowerCase().includes(filter) ? 'flex' : 'none';
+            const matchesText = card.innerText.toLowerCase().includes(query);
+            let matchesSem = true;
+            if (semFilter !== 'all') {
+                const sems = JSON.parse(card.getAttribute('data-sems') || '[]');
+                matchesSem = sems.includes(parseInt(semFilter));
+            }
+            const show = matchesText && matchesSem;
+            card.style.display = show ? 'flex' : 'none';
+            if (show) visibleCount++;
         });
-    });
+
+        document.getElementById('teacherEmpty').style.display = visibleCount === 0 ? 'block' : 'none';
+
+        // Save to sessionStorage so it's restored on any return navigation
+        sessionStorage.setItem('approve_sem_{{ curr_session.sessionID }}', semFilter);
+    }
+
+    document.getElementById('teacherSearch').addEventListener('keyup', applyFilters);
+    document.getElementById('semFilter').addEventListener('change', applyFilters);
+
+    // Restore filter from sessionStorage on page load
+    const savedSem = sessionStorage.getItem('approve_sem_{{ curr_session.sessionID }}');
+    if (savedSem) {
+        document.getElementById('semFilter').value = savedSem;
+    }
+    applyFilters(); // run once on load with restored value
 </script>
 
 {% endblock %}

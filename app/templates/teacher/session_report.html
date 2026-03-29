@@ -362,6 +362,26 @@
         </div>
         <div class="header-actions">
             <a href="/teacher/results" class="btn btn-back">← Back</a>
+            {% if curr_session.status == 2 %}
+            {%- set ns = namespace(has_pending=false) -%}
+            {%- for r in reports -%}
+                {%- set key = r.subject.subjectID|string + '_all' -%}
+                {%- if not approval_dict.get(key, {}).get('teacher_agreed', false) -%}
+                    {%- set ns.has_pending = true -%}
+                {%- endif -%}
+            {%- endfor -%}
+            <form action="/teacher/agree_all" method="POST" style="margin:0;"
+                  {% if ns.has_pending %}onsubmit="return confirm('Digitally sign ALL subjects at once? This cannot be undone.');"{% endif %}>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="session_id" value="{{ curr_session.sessionID }}">
+                <button type="submit" class="btn"
+                    {% if not ns.has_pending %}disabled{% endif %}
+                    style="background: {{ '#0284c7' if ns.has_pending else '#cbd5e1' }}; color:white; cursor: {{ 'pointer' if ns.has_pending else 'not-allowed' }}; opacity: {{ '1' if ns.has_pending else '0.6' }};"
+                    title="{{ 'Sign all subjects at once' if ns.has_pending else 'All subjects already agreed' }}">
+                    ✍️ Agree All
+                </button>
+            </form>
+            {% endif %}
         </div>
     </div>
 

@@ -72,20 +72,30 @@ def session_teachers(session_id):
         agreed_count   = sum(1 for a in teacher_approvals if a.teacher_agreed)
         approved_count = sum(1 for a in teacher_approvals if a.hod_approved)
 
-        all_agreed      = (total_subjects > 0) and (agreed_count   >= total_subjects)
+        all_agreed       = (total_subjects > 0) and (agreed_count   >= total_subjects)
         all_hod_approved = (total_subjects > 0) and (approved_count >= total_subjects)
+        # Subjects the teacher has signed but HOD hasn't yet approved
+        agreed_pending_hod = max(0, agreed_count - approved_count)
+        # Subjects the teacher still hasn't signed
+        unagreed_count     = max(0, total_subjects - agreed_count)
 
-        # Sort key: 0 = green (agreed, not yet fully HOD-approved)
-        #           1 = red   (not yet agreed)
-        #           2 = white (fully HOD-approved)
+        # Sort key: 0 = green  (all agreed, awaiting HOD)
+        #           1 = yellow (some agreed awaiting HOD + some still unagreed — both need to act)
+        #           2 = red    (ball is entirely in teacher's court — no pending HOD work)
+        #           3 = white  (fully HOD-approved)
         if all_hod_approved:
-            sort_key = 2
+            sort_key = 3
             card_status = 'approved'
         elif all_agreed:
             sort_key = 0
             card_status = 'agreed'
-        else:
+        elif agreed_pending_hod > 0 and unagreed_count > 0:
+            # HOD can still approve some, teacher must also agree to rest → yellow
             sort_key = 1
+            card_status = 'partial'
+        else:
+            # Nothing for HOD to do; all unagreed → only teacher can advance → red
+            sort_key = 2
             card_status = 'pending'
 
         teacher_info.append({
@@ -94,12 +104,32 @@ def session_teachers(session_id):
             'sort_key':   sort_key,
         })
 
-    # Sort: green → red → white
+    # Sort: green → yellow → red → white
     teacher_info.sort(key=lambda x: x['sort_key'])
+
+    # --- Build semester filter data ---
+    semesters_raw = db.session.query(Allocation.targetSemester).filter_by(
+        sessionID=session_id
+    ).distinct().order_by(Allocation.targetSemester).all()
+    semesters = sorted(set(s[0] for s in semesters_raw if s[0] != 0))
+
+    # Map teacherID -> list of semesters they teach
+    # For electives (targetSemester=0), fall back to the subject's own semester
+    allocs_all = Allocation.query.filter_by(sessionID=session_id).all()
+    teacher_sems = {}
+    for a in allocs_all:
+        if a.teacherID not in teacher_sems:
+            teacher_sems[a.teacherID] = set()
+        sem = a.targetSemester if a.targetSemester != 0 else (a.subject.semester if a.subject else 0)
+        if sem != 0:
+            teacher_sems[a.teacherID].add(sem)
+    teacher_sems = {k: sorted(v) for k, v in teacher_sems.items()}
 
     return render_template('hod/session_teachers.html',
                            curr_session=curr_session,
-                           teacher_info=teacher_info)
+                           teacher_info=teacher_info,
+                           semesters=semesters,
+                           teacher_sems=teacher_sems)
 
 @hod_bp.route('/results/report/<int:session_id>/<int:teacher_id>')
 def teacher_report(session_id, teacher_id):
@@ -168,7 +198,14 @@ def teacher_report(session_id, teacher_id):
             'comments': all_subject_comments # <-- Attached to Overall Tab
         })
 
-        for alloc in data['allocations']:
+        def _sort_alloc(a):
+            b_map = {'All': 0, 'P': 1, 'Q': 2, 'R': 3}
+            b = b_map.get(a.targetBatch, 99)
+            try: d = float(a.targetDivision)
+            except (ValueError, TypeError): d = 999.0
+            return (a.targetSemester, d, str(a.targetDivision), b, str(a.targetBatch))
+
+        for alloc in sorted(data['allocations'], key=_sort_alloc):
             c_query = db.session.query(
                 FeedbackResult.questionID, 
                 func.avg(FeedbackResult.rating), 
@@ -270,7 +307,55 @@ def approve_report():
     else:
         flash("Cannot approve. The teacher must agree to the overall report first.", "danger")
         
-    return redirect(request.referrer)   
+    return redirect(request.referrer)
+
+
+# --- HOD APPROVE ALL ROUTE ---
+@hod_bp.route('/approve_all', methods=['POST'])
+def approve_all():
+    """Approve all subjects for a teacher that the teacher has already agreed to."""
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+
+    session_id = request.form.get('session_id')
+    teacher_id = request.form.get('teacher_id')
+
+    sess_obj = Session.query.get(session_id)
+    if sess_obj and sess_obj.status != 2:
+        flash("Cannot approve while the session is not yet terminated.", "danger")
+        return redirect(request.referrer)
+
+    # Find all overall approval records (allocationID=None) where teacher has agreed
+    overall_approvals = ReportApproval.query.filter_by(
+        sessionID=session_id,
+        teacherID=teacher_id,
+        allocationID=None,
+    ).filter(ReportApproval.teacher_agreed == True).all()
+
+    if not overall_approvals:
+        flash("No agreed subjects found to approve.", "warning")
+        return redirect(request.referrer)
+
+    approved_count = 0
+    for overall in overall_approvals:
+        if not overall.hod_approved:
+            overall.hod_approved = True
+            approved_count += 1
+            # Also approve all child (per-class) records for this subject
+            child_approvals = ReportApproval.query.filter_by(
+                sessionID=session_id,
+                teacherID=teacher_id,
+                subjectID=overall.subjectID
+            ).all()
+            for child in child_approvals:
+                child.hod_approved = True
+
+    db.session.commit()
+    if approved_count:
+        flash(f"Approved {approved_count} subject(s) successfully.", "success")
+    else:
+        flash("All agreed subjects were already approved.", "info")
+
+    return redirect(request.referrer)
 
 # ==========================================
 # CREATE ADMIN (HOD Only)

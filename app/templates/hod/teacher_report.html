@@ -333,6 +333,28 @@
         <div class="header-actions">
             <a href="{{ url_for('hod.session_teachers', session_id=curr_session.sessionID) }}" class="btn btn-back">←
                 Back to Teachers</a>
+            {% if curr_session.status == 2 %}
+            {%- set ns = namespace(has_pending=false) -%}
+            {%- for r in reports -%}
+                {%- set key = r.subject.subjectID|string + '_all' -%}
+                {%- set app = approval_dict.get(key, {}) -%}
+                {%- if app.get('teacher_agreed', false) and not app.get('hod_approved', false) -%}
+                    {%- set ns.has_pending = true -%}
+                {%- endif -%}
+            {%- endfor -%}
+            <form action="{{ url_for('hod.approve_all') }}" method="POST" style="margin:0;"
+                  {% if ns.has_pending %}onsubmit="return confirm('Approve ALL subjects this teacher has agreed to? This cannot be undone.');"{% endif %}>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="session_id" value="{{ curr_session.sessionID }}">
+                <input type="hidden" name="teacher_id" value="{{ teacher.userID }}">
+                <button type="submit" class="btn"
+                    {% if not ns.has_pending %}disabled{% endif %}
+                    style="background: {{ '#059669' if ns.has_pending else '#cbd5e1' }}; color:white; cursor: {{ 'pointer' if ns.has_pending else 'not-allowed' }}; opacity: {{ '1' if ns.has_pending else '0.6' }};"
+                    title="{{ 'Approve all agreed subjects at once' if ns.has_pending else 'No agreed subjects pending approval' }}">
+                    ✅ Approve All Agreed
+                </button>
+            </form>
+            {% endif %}
         </div>
     </div>
 
