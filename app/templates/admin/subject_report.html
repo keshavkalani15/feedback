@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Analysis - {{ teacher.name }}</title>
+    <title>Subject Analysis - {{ subject.subjectName }}</title>
     <script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
     
     <style>
@@ -45,25 +45,22 @@
 
         .main-container { display: flex; flex: 1; overflow: hidden; }
 
-        .subject-sidebar {
+        .teacher-sidebar {
             width: 300px; background: #fff;
             border-right: 1px solid #ddd;
             display: flex; flex-direction: column;
         }
         .search-container { padding: 15px; border-bottom: 1px solid #eee; }
         .search-box { width: 94%; padding: 10px; border: 1px solid #eee; border-radius: 6px; background: #f9f9f9; }
-        .subject-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .teacher-list { flex: 1; overflow-y: auto; padding: 10px; }
         
-        .sub-card {
+        .teacher-card {
             padding: 15px; margin-bottom: 8px; border-radius: 8px; cursor: pointer;
             border: 1px solid transparent; transition: 0.2s;
         }
-        .sub-card:hover { background: #f8f9fa; }
-        .sub-card.active { background: #ebf5fb; border-color: #aed6f1; border-left: 4px solid var(--soft-blue); }
-        .sub-name { font-weight: 700; font-size: 0.95rem; display: block; }
-        .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-top: 5px; }
-        .badge-theory { background: #fdf2f2; color: #c0392b; }
-        .badge-practical { background: #e8f8f5; color: #16a085; }
+        .teacher-card:hover { background: #f8f9fa; }
+        .teacher-card.active { background: #ebf5fb; border-color: #aed6f1; border-left: 4px solid var(--soft-blue); }
+        .teacher-name { font-weight: 700; font-size: 0.95rem; display: block; }
 
         .report-view { flex: 1; padding: 30px; overflow-y: auto; background: #f4f7f6; }
         .stats-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 25px; }
@@ -88,18 +85,18 @@
 
         @media print {
             @page { size: A4; margin: 15mm; }
-            .subject-sidebar, .btn, .search-container, .header-actions { display: none !important; }
+            .teacher-sidebar, .btn, .search-container, .header-actions { display: none !important; }
             body, .main-container, .report-view { height: auto !important; overflow: visible !important; display: block !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
             .report-view { zoom: 75%; }
             .report-header { box-shadow: none !important; border-bottom: 2px solid #333 !important; padding: 10px 0 !important; }
             #disp-title { margin-top: 30px !important; font-size: 2.5rem !important; }
             .subject-type-label{color: #64748b; font-size: 1.5rem;}
             .card { break-inside: avoid; page-break-inside: avoid; margin-bottom: 20px; }
-            .bar-fill, .tab-btn.active, .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bar-fill, .tab-btn.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             #comments-print-section {
-                page-break-before: always; /* For older browsers */
-                break-before: page;        /* Modern standard */
-                margin-top: 0 !important;  /* Removes the top margin so it sits flush at the top of the new page */
+                page-break-before: always;
+                break-before: page;
+                margin-top: 0 !important;
             }
         }
     </style>
@@ -108,39 +105,38 @@
 
     <div class="report-header">
         <div class="header-title">
-            <h2>{{ teacher.prn_empID }} - {{ teacher.name }}</h2>
-            <span>Admin View  |  {{curr_session.sessionID}} - {{ curr_session.sessionName }}</span>
+            <h2>{{ subject.subjectName }} 
+                <span class="subject-type-label">
+                    &ensp; {{ 'Theory' if subject.subjectType == 'Theory' else 'Lab' }} 
+                    ({{ 'Elective' if subject.is_elective else 'Core' }})
+                </span>
+            </h2>
+            <span>Subject View  |  {{curr_session.sessionID}} - {{ curr_session.sessionName }}</span>
         </div>
         <div class="header-actions">
-            <a href="#" onclick="goBack()" class="btn btn-back">← Back to Teachers</a>
+            <a href="#" onclick="goBack()" class="btn btn-back">← Back</a>
             <button onclick="window.print()" class="btn btn-print">🖨️ Print Report</button>
         </div>
     </div>
     <script>
         function goBack() {
             const urlParams = new URLSearchParams(window.location.search);
-            const viewParam = urlParams.get('view') || 'teacher';
+            const viewParam = urlParams.get('view') || 'subject';
             const semParam = urlParams.get('sem') || 'all';
             window.location.href = "{{ url_for('admin.session_teachers', session_id=curr_session.sessionID) }}?view=" + viewParam + "&sem=" + semParam;
         }
     </script>
 
     <div class="main-container">
-        <div class="subject-sidebar">
+        <div class="teacher-sidebar">
             <div class="search-container">
-                <input type="text" id="searchInput" class="search-box" placeholder="Search Subject..." onkeyup="filterSubjects()">
+                <input type="text" id="searchInput" class="search-box" placeholder="Search Teacher..." onkeyup="filterTeachers()">
             </div>
-            <div class="subject-list" id="subjectList">
+            <div class="teacher-list" id="teacherList">
                 {% for r in reports %}
-                <div class="sub-card" data-sems='{{ r.subject.semesters | tojson }}' onclick="loadSubject({{ loop.index0 }})" id="card-{{ loop.index0 }}">
-                    <span class="sub-name">
-                        {{ r.subject.subjectName }}
-                    </span>
-                    <span class="sub-meta" style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ r.subject.subjectID }}</span>
-                    &nbsp;
-                    <span class="badge badge-{{ r.subject.subjectType|lower }}" style="font-size: 12px;">
-                        {{ 'Lab' if r.subject.subjectType == 'Practical' else 'Theory' }}
-                    </span>
+                <div class="teacher-card" onclick="loadTeacher({{ loop.index0 }})" id="card-{{ loop.index0 }}">
+                    <span class="teacher-name">{{ r.teacher.teacherName }}</span>
+                    <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ r.teacher.teacherEmpID }}</span>
                 </div>
                 {% endfor %}
             </div>
@@ -148,13 +144,13 @@
 
         <div class="report-view">
             <div id="empty-state" style="text-align: center; color: #999; margin-top: 100px;">
-                <h3>Select a subject to view analytics.</h3>
+                <h3>Select a teacher to view analytics.</h3>
             </div>
 
             <div id="report-content" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 15px;">
                     <div>
-                        <h2 style="margin: 0; color: var(--primary-slate);" id="disp-title">Subject</h2>
+                        <h2 style="margin: 0; color: var(--primary-slate);" id="disp-title">Teacher</h2>
                         <span id="disp-id" style="color: #7f8c8d; font-size: 0.9rem;"></span> 
                     </div>
                     <span id="disp-responses" style="font-weight: bold; color: #7f8c8d;">0 Responses</span>
@@ -190,7 +186,7 @@
                 </h3>
                 
                 <div id="comments-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 10px; max-height: 500px; overflow-y: auto; padding: 10px;">
-                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -200,43 +196,19 @@
         let myBarChart = null;
         let myPieChart = null;
 
-        // Apply URL and load first visible subject
-        const pageUrlParams = new URLSearchParams(window.location.search);
-        const currentSem = pageUrlParams.get('sem');
-        
-        let firstVisibleIdx = -1;
-        document.querySelectorAll('.sub-card').forEach((card, idx) => {
-            const semsStr = card.getAttribute('data-sems');
-            const cardSems = semsStr ? JSON.parse(semsStr) : [];
-            
-            if (currentSem && currentSem !== 'all' && !cardSems.includes(parseInt(currentSem))) {
-                card.style.display = 'none';
-                card.classList.add('filtered-out');
-            } else {
-                if (firstVisibleIdx === -1) firstVisibleIdx = idx;
-            }
-        });
+        if(reportData.length > 0) loadTeacher(0);
 
-        if (firstVisibleIdx !== -1) {
-            loadSubject(firstVisibleIdx);
-        } else if (reportData.length > 0) {
-            // Unlikely fallback if URL sem doesn't match anything
-            loadSubject(0);
-        }
-
-        function loadSubject(index) {
-            document.querySelectorAll('.sub-card').forEach(el => el.classList.remove('active'));
+        function loadTeacher(index) {
+            document.querySelectorAll('.teacher-card').forEach(el => el.classList.remove('active'));
             document.getElementById(`card-${index}`).classList.add('active');
 
             document.getElementById('empty-state').style.display = 'none';
             document.getElementById('report-content').style.display = 'block';
 
             const data = reportData[index];
-            const typeLabel = data.subject.subjectType === 'Practical' ? 'Lab' : 'Theory';
-            const electiveLabel = data.subject.is_elective ? 'Elective' : 'Core';
             
-            document.getElementById('disp-title').innerHTML = `${data.subject.subjectName} <span class="subject-type-label"> &ensp; ${typeLabel} (${electiveLabel})</span>`;
-            document.getElementById('disp-id').innerText = "Subject ID: " + data.subject.subjectID;
+            document.getElementById('disp-title').innerText = data.teacher.teacherName;
+            document.getElementById('disp-id').innerText = "Emp ID: " + data.teacher.teacherEmpID;
 
             const tabContainer = document.getElementById('tabs-container');
             tabContainer.innerHTML = '';
@@ -245,7 +217,6 @@
                 const btn = document.createElement('button');
                 btn.className = `tab-btn ${i===0 ? 'active' : ''}`;
                 
-                // ELECTIVE FIX: Replace "Sem 0" with "Elec" for Admin view
                 let displayLabel = tab.label.replace("Sem 0", "Elec");
                 
                 btn.innerText = displayLabel;
@@ -255,10 +226,10 @@
             loadStats(index, 0);
         }
 
-        function loadStats(subIndex, tabIndex) {
-            const subData = reportData[subIndex];
-            const tabData = subData.tabs[tabIndex];
-            const questions = subData.questions;
+        function loadStats(teacherIndex, tabIndex) {
+            const teacherData = reportData[teacherIndex];
+            const tabData = teacherData.tabs[tabIndex];
+            const questions = teacherData.questions;
 
             document.querySelectorAll('.tab-btn').forEach((btn, i) => {
                 btn.classList.toggle('active', i === tabIndex);
@@ -281,14 +252,12 @@
                 }
             });
 
-            // ==========================================
-            // DYNAMIC COMMENTS LOGIC
-            // ==========================================
+            // Comments
             const commentsContainer = document.getElementById('comments-container');
             const commentBadge = document.getElementById('comment-badge');
             
             if (commentsContainer && commentBadge) {
-                commentsContainer.innerHTML = ''; // Clear out previous comments
+                commentsContainer.innerHTML = '';
                 const currentComments = tabData.comments || [];
                 
                 commentBadge.innerText = `(${currentComments.length} total)`;
@@ -309,7 +278,6 @@
                     `;
                 }
             }
-
 
             const finalAvg = questionCount > 0 ? (totalScoreSum / questionCount).toFixed(2) : "0.0";
             document.getElementById('big-score').innerText = finalAvg;
@@ -374,9 +342,9 @@
             });
         }
 
-        function filterSubjects() {
+        function filterTeachers() {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            document.querySelectorAll('.sub-card:not(.filtered-out)').forEach(card => {
+            document.querySelectorAll('.teacher-card').forEach(card => {
                 card.style.display = card.innerText.toLowerCase().includes(query) ? 'block' : 'none';
             });
         }

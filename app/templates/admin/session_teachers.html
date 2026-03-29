@@ -2,30 +2,168 @@
 {% block content %}
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
         <a href="{{ url_for('admin.view_results') }}" class="btn btn-sm btn-blue" style="background: #64748b;">← Sessions</a>
-        <h2 class="page-title" style="margin: 0;">Teachers: {{ curr_session.sessionName }}</h2>
+        <h2 class="page-title" style="margin: 0;">{{ curr_session.sessionName }}</h2>
     </div>
 
-    <input type="text" id="teacherSearch" placeholder="Search Teacher Name or ID..." 
-           style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px;">
-
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
-        {% for t in teachers %}
-        <div class="card teacher-card" style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
-            <div>
-                <h3 style="margin: 0; font-size: 1rem;">{{ t.name }}</h3>
-                <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ t.prn_empID }}</span>
-            </div>
-            <a href="{{ url_for('admin.teacher_report', session_id=curr_session.sessionID, teacher_id=t.userID) }}" class="btn btn-blue btn-sm">Analysis ➔</a>
+    <!-- Filter Bar -->
+    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+        <input type="text" id="searchBox" placeholder="Search Name, ID..." 
+               style="flex: 1; min-width: 200px; padding: 12px; border: 1px solid #ddd; border-radius: 6px;">
+        
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label style="font-weight: 600; color: #64748b; font-size: 0.9rem; margin-bottom: 10px;">Semester:</label>
+            <select id="semFilter" onchange="applyFilters()" style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+                <option value="all">All</option>
+                {% for s in semesters %}
+                <option value="{{ s }}">Sem {{ s }}</option>
+                {% endfor %}
+            </select>
         </div>
-        {% endfor %}
+
+        <div style="display: flex; background: #f1f5f9; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; margin-bottom: 10px;">
+            <button class="view-toggle active" id="btn-teacher" onclick="switchView('teacher')" 
+                    style="padding: 10px 20px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; background: #3498db; color: white;">
+                By Teacher
+            </button>
+            <button class="view-toggle" id="btn-subject" onclick="switchView('subject')" 
+                    style="padding: 10px 20px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; background: transparent; color: #64748b;">
+                By Subject
+            </button>
+        </div>
+    </div>
+
+    <!-- Teacher View -->
+    <div id="teacher-view">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+            {% for t in teachers %}
+            <div class="card teacher-card" data-id="{{ t.userID }}" data-sems="{{ teacher_sems.get(t.userID, []) | tojson }}" 
+                 style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem;">{{ t.name }}</h3>
+                    <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ t.prn_empID }}</span>
+                </div>
+                <a href="{{ url_for('admin.teacher_report', session_id=curr_session.sessionID, teacher_id=t.userID) }}" class="btn btn-blue btn-sm">Analysis ➔</a>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="teacher-empty" style="display:none; text-align:center; padding: 40px; color: #94a3b8;">
+            <h3>No teachers found matching your filter.</h3>
+        </div>
+    </div>
+
+    <!-- Subject View -->
+    <div id="subject-view" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+            {% for sub in subjects %}
+            <div class="card subject-card" data-id="{{ sub.subjectID }}" data-sems="{{ subject_sems.get(sub.subjectID, []) | tojson }}"
+                 style="margin-bottom: 0; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1rem;">{{ sub.subjectName }}</h3>
+                    <span style="font-size: 0.8rem; color: #7f8c8d;">ID: {{ sub.subjectID }} · Sem {{ sub.semester }}</span>
+                    &nbsp;
+                    <span style="display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-top: 3px;
+                        {% if sub.subjectType == 'Theory' %}background: #fdf2f2; color: #c0392b;{% else %}background: #e8f8f5; color: #16a085;{% endif %}">
+                        {{ 'Theory' if sub.subjectType == 'Theory' else 'Lab' }}
+                    </span>
+                    {% if sub.is_elective %}
+                    <span style="display: inline-block; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">ELEC</span>
+                    {% endif %}
+                </div>
+                <a href="{{ url_for('admin.subject_report', session_id=curr_session.sessionID, subject_id=sub.subjectID) }}" class="btn btn-blue btn-sm" style="flex-shrink: 0; white-space: nowrap; margin-left: 5px;">Analysis ➔</a>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="subject-empty" style="display:none; text-align:center; padding: 40px; color: #94a3b8;">
+            <h3>No subjects found matching your filter.</h3>
+        </div>
     </div>
 
     <script>
-        document.getElementById('teacherSearch').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase();
-            document.querySelectorAll('.teacher-card').forEach(card => {
-                card.style.display = card.innerText.toLowerCase().includes(filter) ? 'flex' : 'none';
-            });
-        });
+        let currentView = 'teacher';
+
+        function switchView(view) {
+            currentView = view;
+            document.getElementById('teacher-view').style.display = view === 'teacher' ? 'block' : 'none';
+            document.getElementById('subject-view').style.display = view === 'subject' ? 'block' : 'none';
+            
+            // Toggle button styles
+            const btnTeacher = document.getElementById('btn-teacher');
+            const btnSubject = document.getElementById('btn-subject');
+            if (view === 'teacher') {
+                btnTeacher.style.background = '#3498db'; btnTeacher.style.color = 'white';
+                btnSubject.style.background = 'transparent'; btnSubject.style.color = '#64748b';
+            } else {
+                btnSubject.style.background = '#3498db'; btnSubject.style.color = 'white';
+                btnTeacher.style.background = 'transparent'; btnTeacher.style.color = '#64748b';
+            }
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const semFilter = document.getElementById('semFilter').value;
+
+            if (currentView === 'teacher') {
+                let visibleCount = 0;
+                document.querySelectorAll('.teacher-card').forEach(card => {
+                    const matchesText = card.innerText.toLowerCase().includes(query);
+                    let matchesSem = true;
+                    if (semFilter !== 'all') {
+                        const sems = JSON.parse(card.getAttribute('data-sems') || '[]');
+                        matchesSem = sems.includes(parseInt(semFilter));
+                    }
+                    const show = matchesText && matchesSem;
+                    card.style.display = show ? 'flex' : 'none';
+                    if (show) visibleCount++;
+                    
+                    // Update URL
+                    const btn = card.querySelector('.btn-blue');
+                    if (btn) {
+                        const baseUrl = btn.getAttribute('href').split('?')[0];
+                        btn.setAttribute('href', `${baseUrl}?view=${currentView}&sem=${semFilter}`);
+                    }
+                });
+                document.getElementById('teacher-empty').style.display = visibleCount === 0 ? 'block' : 'none';
+            } else {
+                let visibleCount = 0;
+                document.querySelectorAll('.subject-card').forEach(card => {
+                    const matchesText = card.innerText.toLowerCase().includes(query);
+                    let matchesSem = true;
+                    if (semFilter !== 'all') {
+                        const sems = JSON.parse(card.getAttribute('data-sems') || '[]');
+                        matchesSem = sems.includes(parseInt(semFilter));
+                    }
+                    const show = matchesText && matchesSem;
+                    card.style.display = show ? 'flex' : 'none';
+                    if (show) visibleCount++;
+                    
+                    // Update URL
+                    const btn = card.querySelector('.btn-blue');
+                    if (btn) {
+                        const baseUrl = btn.getAttribute('href').split('?')[0];
+                        btn.setAttribute('href', `${baseUrl}?view=${currentView}&sem=${semFilter}`);
+                    }
+                });
+                document.getElementById('subject-empty').style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        // Live search
+        document.getElementById('searchBox').addEventListener('keyup', applyFilters);
+
+        // Restore view and sem from URL parameter (e.g. ?view=subject&sem=6)
+        const urlParams = new URLSearchParams(window.location.search);
+        const viewParam = urlParams.get('view');
+        const semParam = urlParams.get('sem');
+        
+        if (semParam && semParam !== 'all') {
+            document.getElementById('semFilter').value = semParam;
+        }
+
+        if (viewParam === 'subject') {
+            switchView('subject');
+        } else {
+            applyFilters();
+        }
     </script>
 {% endblock %}
