@@ -234,8 +234,9 @@
     <div class="sidebar">
         <h2>Management</h2>
         <div class="nav-links">
-            <a href="/hod/dashboard" class="{{ 'active' if 'dashboard' in request.path }}">Dashboard <span>›</span></a>
-            <a href="/hod/results" class="{{ 'active' if 'results' in request.path }}">View Results <span>›</span></a>
+            <a href="/hod/dashboard" class="{{ 'active' if request.path == '/hod/dashboard' }}">Dashboard <span>›</span></a>
+            <a href="/hod/results" class="{{ 'active' if request.path.startswith('/hod/results') }}">Approve Results <span>›</span></a>
+            <a href="/hod/analyze" class="{{ 'active' if request.path.startswith('/hod/analyze') }}">Analyze Results <span>›</span></a>
             <a href="/hod/create_admin" class="{{ 'active' if 'create_admin' in request.path }}">Create Admin
                 <span>›</span></a>
             <a href="/hod/change_password" class="{{ 'active' if 'password' in request.path }}">Security

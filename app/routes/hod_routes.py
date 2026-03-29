@@ -350,3 +350,274 @@ def delete_admin(user_id):
     db.session.commit()
     flash(f"Admin '{user.name}' deleted.", "success")
     return redirect(url_for('hod.create_admin'))
+
+# --- HOD ANALYZE ROUTES (COPIED FROM ADMIN) ---
+
+@hod_bp.route('/analyze')
+def analyze():
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    sessions = Session.query.order_by(Session.sessionID.desc()).all()
+    
+    # OPTIMIZED: Batch count allocations in one query instead of N queries
+    alloc_counts = dict(
+        db.session.query(Allocation.sessionID, func.count(Allocation.allocationID))
+        .group_by(Allocation.sessionID).all()
+    )
+    for s in sessions:
+        s.alloc_count = alloc_counts.get(s.sessionID, 0)
+        
+    return render_template('hod/analyze_sessions.html', sessions=sessions)
+
+# --- 2. VIEW TEACHERS IN A SESSION ---
+@hod_bp.route('/analyze/session/<int:session_id>')
+def analyze_session_teachers(session_id):
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    curr_session = Session.query.get_or_404(session_id)
+    
+    # Get unique teachers who have allocations in this session
+    teacher_ids = db.session.query(Allocation.teacherID).filter_by(sessionID=session_id).distinct().all()
+    teacher_ids = [t[0] for t in teacher_ids]
+    teachers = User.query.filter(User.userID.in_(teacher_ids)).all()
+    
+    # Get unique subjects in this session
+    subject_ids = db.session.query(Allocation.subjectID).filter_by(sessionID=session_id).distinct().all()
+    subject_ids = [s[0] for s in subject_ids]
+    subjects = Subject.query.filter(Subject.subjectID.in_(subject_ids)).order_by(Subject.semester, Subject.subjectName).all()
+    
+    # Get distinct semesters from allocations (for filter)
+    semesters = db.session.query(Allocation.targetSemester).filter_by(sessionID=session_id).distinct().order_by(Allocation.targetSemester).all()
+    semesters = sorted(set([s[0] for s in semesters if s[0] != 0]))  # Exclude 0 (elective placeholder)
+    
+    # Build teacher -> semesters mapping for JS filtering
+    teacher_sems = {}
+    allocs_for_sems = Allocation.query.filter_by(sessionID=session_id).all()
+    for a in allocs_for_sems:
+        if a.teacherID not in teacher_sems:
+            teacher_sems[a.teacherID] = set()
+        if a.targetSemester != 0:
+            teacher_sems[a.teacherID].add(a.targetSemester)
+        else:
+            # For electives, use subject semester
+            teacher_sems[a.teacherID].add(a.subject.semester if a.subject else 0)
+    teacher_sems = {k: list(v) for k, v in teacher_sems.items()}
+    
+    # Build subject -> semesters mapping for JS filtering
+    subject_sems = {}
+    for a in allocs_for_sems:
+        if a.subjectID not in subject_sems:
+            subject_sems[a.subjectID] = set()
+        if a.targetSemester != 0:
+            subject_sems[a.subjectID].add(a.targetSemester)
+        else:
+            subject_sems[a.subjectID].add(a.subject.semester if a.subject else 0)
+    subject_sems = {k: list(v) for k, v in subject_sems.items()}
+    
+    return render_template('hod/analyze_session_teachers.html', 
+        curr_session=curr_session, teachers=teachers, subjects=subjects,
+        semesters=semesters, teacher_sems=teacher_sems, subject_sems=subject_sems)
+    
+@hod_bp.route('/analyze/report/<int:session_id>/<int:teacher_id>')
+def analyze_teacher_report(session_id, teacher_id):
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    
+    curr_session = Session.query.get_or_404(session_id)
+    teacher = User.query.get_or_404(teacher_id)
+    
+    allocations = Allocation.query.filter_by(teacherID=teacher_id, sessionID=session_id).all()
+    
+    grouped = {}
+    theory_qs = load_questions('theory_questions.json')
+    lab_qs = load_questions('lab_questions.json')
+
+    for a in allocations:
+        if a.subjectID not in grouped:
+            grouped[a.subjectID] = {'subject': a.subject, 'allocations': []}
+        grouped[a.subjectID]['allocations'].append(a)
+
+    reports = []
+    for s_id, data in grouped.items():
+        subject_obj = data['subject']
+        questions = theory_qs if subject_obj.subjectType == 'Theory' else lab_qs
+        q_count = len(questions) if len(questions) > 0 else 1
+        
+        # Determine actual semesters this subject is taught in (handles electives where subject.semester is 0)
+        active_sems = list(set([a.targetSemester if a.targetSemester != 0 else subject_obj.semester for a in data['allocations']]))
+        
+        subject_data = {
+            'subjectID': subject_obj.subjectID,
+            'subjectName': subject_obj.subjectName,
+            'subjectType': subject_obj.subjectType,
+            'is_elective': subject_obj.is_elective,
+            'semesters': active_sems
+        }
+        
+        tabs_data = []
+        all_ids = [x.allocationID for x in data['allocations']]
+        
+        # ==========================================
+        # 1. NEW COMMENT SORTING LOGIC
+        # ==========================================
+        raw_comments = FeedbackComment.query.filter(
+            FeedbackComment.allocationID.in_(all_ids),
+            FeedbackComment.sessionID == session_id,
+            FeedbackComment.comment_text != None,
+            FeedbackComment.comment_text != ''
+        ).all()
+        
+        # Sort them into a dictionary by allocation ID
+        comments_by_alloc = {alloc_id: [] for alloc_id in all_ids}
+        all_subject_comments = []
+        
+        for c in raw_comments:
+            txt = c.comment_text.strip()
+            if txt:
+                comments_by_alloc[c.allocationID].append(txt)
+                all_subject_comments.append(txt)
+        # ==========================================
+
+        overall_stats = db.session.query(
+            FeedbackResult.questionID, 
+            func.avg(FeedbackResult.rating), 
+            func.count(FeedbackResult.rating)
+        ).filter(FeedbackResult.allocationID.in_(all_ids)).group_by(FeedbackResult.questionID).all()
+        
+        tabs_data.append({
+            'id': 'all', 
+            'label': 'All Class',
+            'stats': {str(q[0]): round(q[1], 2) for q in overall_stats},
+            'count': sum([q[2] for q in overall_stats]) // q_count if overall_stats else 0,
+            'comments': all_subject_comments # <-- Attached to Overall Tab
+        })
+
+        def _sort_alloc(a):
+            b_map = {'All': 0, 'P': 1, 'Q': 2, 'R': 3}
+            b = b_map.get(a.targetBatch, 99)
+            try: d = float(a.targetDivision)
+            except ValueError: d = 999.0
+            return (a.targetSemester, d, str(a.targetDivision), b, str(a.targetBatch))
+
+        for alloc in sorted(data['allocations'], key=_sort_alloc):
+            c_query = db.session.query(
+                FeedbackResult.questionID, 
+                func.avg(FeedbackResult.rating), 
+                func.count(FeedbackResult.rating)
+            ).filter_by(allocationID=alloc.allocationID).group_by(FeedbackResult.questionID).all()
+            
+            tabs_data.append({
+                'id': alloc.allocationID,
+                'label': f"Sem {alloc.targetSemester}-{alloc.targetDivision} ({alloc.targetBatch})",
+                'stats': {str(q[0]): round(q[1], 2) for q in c_query},
+                'count': (sum([q[2] for q in c_query]) // q_count) if c_query else 0,
+                'comments': comments_by_alloc[alloc.allocationID] # <-- Attached to Specific Class Tab
+            })
+
+        reports.append({'subject': subject_data, 'questions': questions, 'tabs': tabs_data})
+
+    # Note: We no longer need to pass 'comments=comments' at the end because they are inside 'reports' now!
+    return render_template('hod/analyze_teacher_report.html', curr_session=curr_session, teacher=teacher, reports=reports)
+
+
+# --- 3. VIEW SUBJECT REPORT (Reverse of Teacher Report) ---
+@hod_bp.route('/analyze/subject_report/<int:session_id>/<int:subject_id>')
+def analyze_subject_report(session_id, subject_id):
+    if session.get('role') != 'HOD': return redirect(url_for('auth.management_login'))
+    
+    curr_session = Session.query.get_or_404(session_id)
+    subject = Subject.query.get_or_404(subject_id)
+    
+    allocations = Allocation.query.filter_by(subjectID=subject_id, sessionID=session_id).all()
+    
+    theory_qs = load_questions('theory_questions.json')
+    lab_qs = load_questions('lab_questions.json')
+    questions = theory_qs if subject.subjectType == 'Theory' else lab_qs
+    q_count = len(questions) if len(questions) > 0 else 1
+    
+    # Group allocations by teacher
+    grouped = {}
+    for a in allocations:
+        if a.teacherID not in grouped:
+            grouped[a.teacherID] = {'teacher': a.teacher, 'allocations': []}
+        grouped[a.teacherID]['allocations'].append(a)
+    
+    reports = []
+    for t_id, data in grouped.items():
+        teacher_obj = data['teacher']
+        
+        teacher_data = {
+            'teacherID': teacher_obj.userID,
+            'teacherName': teacher_obj.name,
+            'teacherEmpID': teacher_obj.prn_empID
+        }
+        
+        tabs_data = []
+        all_ids = [x.allocationID for x in data['allocations']]
+        
+        # Comments
+        raw_comments = FeedbackComment.query.filter(
+            FeedbackComment.allocationID.in_(all_ids),
+            FeedbackComment.sessionID == session_id,
+            FeedbackComment.comment_text != None,
+            FeedbackComment.comment_text != ''
+        ).all()
+        
+        comments_by_alloc = {alloc_id: [] for alloc_id in all_ids}
+        all_teacher_comments = []
+        
+        for c in raw_comments:
+            txt = c.comment_text.strip()
+            if txt:
+                comments_by_alloc[c.allocationID].append(txt)
+                all_teacher_comments.append(txt)
+        
+        # Overall stats for this teacher
+        overall_stats = db.session.query(
+            FeedbackResult.questionID, 
+            func.avg(FeedbackResult.rating), 
+            func.count(FeedbackResult.rating)
+        ).filter(FeedbackResult.allocationID.in_(all_ids)).group_by(FeedbackResult.questionID).all()
+        
+        tabs_data.append({
+            'id': 'all', 
+            'label': 'All Class',
+            'stats': {str(q[0]): round(q[1], 2) for q in overall_stats},
+            'count': sum([q[2] for q in overall_stats]) // q_count if overall_stats else 0,
+            'comments': all_teacher_comments
+        })
+        
+        def _sort_alloc(a):
+            b_map = {'All': 0, 'P': 1, 'Q': 2, 'R': 3}
+            b = b_map.get(a.targetBatch, 99)
+            try: d = float(a.targetDivision)
+            except ValueError: d = 999.0
+            return (a.targetSemester, d, str(a.targetDivision), b, str(a.targetBatch))
+
+        for alloc in sorted(data['allocations'], key=_sort_alloc):
+            c_query = db.session.query(
+                FeedbackResult.questionID, 
+                func.avg(FeedbackResult.rating), 
+                func.count(FeedbackResult.rating)
+            ).filter_by(allocationID=alloc.allocationID).group_by(FeedbackResult.questionID).all()
+            
+            tabs_data.append({
+                'id': alloc.allocationID,
+                'label': f"Sem {alloc.targetSemester}-{alloc.targetDivision} ({alloc.targetBatch})",
+                'stats': {str(q[0]): round(q[1], 2) for q in c_query},
+                'count': (sum([q[2] for q in c_query]) // q_count) if c_query else 0,
+                'comments': comments_by_alloc[alloc.allocationID]
+            })
+        
+        reports.append({'teacher': teacher_data, 'questions': questions, 'tabs': tabs_data})
+    
+    subject_data = {
+        'subjectID': subject.subjectID,
+        'subjectName': subject.subjectName,
+        'subjectType': subject.subjectType,
+        'is_elective': subject.is_elective
+    }
+    
+    return render_template('hod/analyze_subject_report.html', curr_session=curr_session, subject=subject_data, reports=reports)
+
+
+# ==========================================
+# SEMESTER ELECTIVE CONFIG
+# ==========================================

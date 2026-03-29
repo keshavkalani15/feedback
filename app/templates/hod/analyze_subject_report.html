@@ -105,13 +105,13 @@
 
     <div class="report-header">
         <div class="header-title">
-            <h2>{{ subject.subjectID }} - {{ subject.subjectName }} 
+            <h2>{{subject.subjectID}} - {{ subject.subjectName }} 
                 <span class="subject-type-label">
                     &ensp; {{ 'Theory' if subject.subjectType == 'Theory' else 'Lab' }} 
                     ({{ 'Elective' if subject.is_elective else 'Core' }})
                 </span>
             </h2>
-            <span>Admin View  |  {{curr_session.sessionID}} - {{ curr_session.sessionName }}</span>
+            <span>HOD View  |  {{curr_session.sessionID}} - {{ curr_session.sessionName }}</span>
         </div>
         <div class="header-actions">
             <a href="#" onclick="goBack()" class="btn btn-back">← Back</a>
@@ -123,7 +123,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const viewParam = urlParams.get('view') || 'subject';
             const semParam = urlParams.get('sem') || 'all';
-            window.location.href = "{{ url_for('admin.session_teachers', session_id=curr_session.sessionID) }}?view=" + viewParam + "&sem=" + semParam;
+            window.location.href = "{{ url_for('hod.analyze_session_teachers', session_id=curr_session.sessionID) }}?view=" + viewParam + "&sem=" + semParam;
         }
     </script>
 
