@@ -928,7 +928,14 @@ def teacher_report(session_id, teacher_id):
             'comments': all_subject_comments # <-- Attached to Overall Tab
         })
 
-        for alloc in data['allocations']:
+        def _sort_alloc(a):
+            b_map = {'All': 0, 'P': 1, 'Q': 2, 'R': 3}
+            b = b_map.get(a.targetBatch, 99)
+            try: d = float(a.targetDivision)
+            except ValueError: d = 999.0
+            return (a.targetSemester, d, str(a.targetDivision), b, str(a.targetBatch))
+
+        for alloc in sorted(data['allocations'], key=_sort_alloc):
             c_query = db.session.query(
                 FeedbackResult.questionID, 
                 func.avg(FeedbackResult.rating), 
@@ -1016,7 +1023,14 @@ def subject_report(session_id, subject_id):
             'comments': all_teacher_comments
         })
         
-        for alloc in data['allocations']:
+        def _sort_alloc(a):
+            b_map = {'All': 0, 'P': 1, 'Q': 2, 'R': 3}
+            b = b_map.get(a.targetBatch, 99)
+            try: d = float(a.targetDivision)
+            except ValueError: d = 999.0
+            return (a.targetSemester, d, str(a.targetDivision), b, str(a.targetBatch))
+
+        for alloc in sorted(data['allocations'], key=_sort_alloc):
             c_query = db.session.query(
                 FeedbackResult.questionID, 
                 func.avg(FeedbackResult.rating), 
