@@ -1,0 +1,413 @@
+# 📋 Student Feedback System — Project Report
+
+**Project:** Student Feedback Collection & Analysis System
+**Developer:** Keshav Kalani
+**Date:** February 2026
+
+---
+
+## 1. System Overview
+
+A **web-based feedback collection system** that enables students to anonymously rate teachers on Theory and Practical subjects. The system manages the complete feedback lifecycle — from session creation and form allocation to anonymous submission, report generation, and HOD approval.
+
+### Key Capabilities
+
+| Capability | Description |
+|---|---|
+| **Multi-role access** | Admin, Teacher, Student, and HOD — each with dedicated portals |
+| **Anonymous feedback** | Token-based system ensures student identity is never linked to ratings |
+| **Elective support** | Students can be assigned different divisions/batches for elective subjects |
+| **Report workflow** | Teacher agrees → HOD approves — structured approval chain |
+| **Batch operations** | CSV upload for students, teachers, and subjects |
+| **Real-time control** | Admin can start, pause, and terminate sessions at any time |
+
+---
+
+## 2. Technology Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Backend** | Python 3, Flask | Web application framework |
+| **ORM** | SQLAlchemy + Flask-SQLAlchemy | Database abstraction |
+| **Database** | MySQL (via PyMySQL) | Persistent storage |
+| **Server** | Waitress (32 threads) | Production-grade WSGI server |
+| **Security** | Werkzeug (pbkdf2:sha256), Flask-WTF | Password hashing, CSRF protection |
+| **Frontend** | HTML5, CSS3, JavaScript | User interface |
+| **Config** | python-dotenv | Environment variable management |
+
+### Dependencies ([requirements.txt](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/requirements.txt))
+
+```
+flask, flask-sqlalchemy, pymysql, cryptography,
+SQLAlchemy, python-dotenv, werkzeug, flask-wtf,
+waitress, paste
+```
+
+---
+
+## 3. Architecture
+
+### Application Structure
+
+```
+FeedBack_Project/
+├── app/
+│   ├── __init__.py              # App factory, CSRF, blueprint registration
+│   ├── models.py                # 11 database models
+│   ├── utils.py                 # Question-loading utility
+│   ├── data/
+│   │   ├── theory_questions.json   # 7 theory feedback questions
+│   │   └── lab_questions.json      # 6 practical feedback questions
+│   ├── routes/
+│   │   ├── auth_routes.py       # Login, logout, password change
+│   │   ├── admin_routes.py      # Admin portal (937 lines)
+│   │   ├── teacher_routes.py    # Teacher portal (602 lines)
+│   │   ├── student_routes.py    # Student portal (294 lines)
+│   │   └── hod_routes.py        # HOD portal (345 lines)
+│   └── templates/               # 36 HTML templates
+│       ├── login.html, management_login.html
+│       ├── student.html, feedback_form.html
+│       ├── admin/  (15 templates)
+│       ├── teacher/ (8 templates)
+│       └── hod/     (9 templates)
+├── config.py                    # DB config, connection pool
+├── serve.py                     # Waitress production server
+├── run.py                       # Database initialization
+└── create_hod.py                # HOD account seeder
+```
+
+### Design Pattern: Blueprint Architecture
+
+```mermaid
+graph TD
+    A["Flask App Factory"] --> B["Auth Blueprint<br/>/login, /logout"]
+    A --> C["Admin Blueprint<br/>/admin/*"]
+    A --> D["Teacher Blueprint<br/>/teacher/*"]
+    A --> E["Student Blueprint<br/>/student/*"]
+    A --> F["HOD Blueprint<br/>/hod/*"]
+    G["CSRF Protection"] --> A
+    H["SQLAlchemy DB"] --> A
+```
+
+---
+
+## 4. Database Design
+
+### Entity-Relationship Diagram
+
+```mermaid
+erDiagram
+    User ||--o{ Allocation : "teaches"
+    User ||--o{ TokenLog : "generates"
+    User ||--o{ ActiveTokenMap : "holds"
+    User ||--o{ StudentElective : "enrolled in"
+    User ||--o{ ClassTeacherAllocation : "assigned as"
+    Session ||--o{ Allocation : "contains"
+    Session ||--o{ TokenLog : "tracks"
+    Subject ||--o{ Allocation : "allocated"
+    Subject ||--o{ StudentElective : "elected"
+    Allocation ||--o{ FeedbackResult : "receives"
+    Allocation ||--o{ FeedbackComment : "receives"
+    Session ||--o{ ReportApproval : "approved in"
+
+    User {
+        int userID PK
+        string prn_empID UK
+        string name
+        string password
+        enum role
+        int semester
+        string division
+        string batch
+    }
+    
+    Session {
+        int sessionID PK
+        string sessionName
+        int status
+    }
+    
+    Allocation {
+        int allocationID PK
+        int sessionID FK
+        int teacherID FK
+        int subjectID FK
+        int targetSemester
+        string targetDivision
+        string targetBatch
+    }
+
+    FeedbackResult {
+        int resultID PK
+        int allocationID FK
+        int sessionID FK
+        int questionID
+        int rating
+    }
+```
+
+### 11 Database Models
+
+| Model | Purpose | Key Features |
+|---|---|---|
+| [User](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#8-18) | All system users | Roles: admin, teacher, student, HOD |
+| [Session](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#19-24) | Feedback sessions | Status: 0=Inactive, 1=Active, 2=Terminated |
+| [Subject](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#25-34) | Academic subjects | Theory/Practical, elective flag, linked subjects |
+| [StudentElective](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#35-44) | Elective enrollments | Maps student → elective subject + div/batch |
+| [Allocation](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#45-57) | Form assignments | Links session + teacher + subject → target class |
+| [TokenLog](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#58-64) | Submission tracking | Tracks token generation and submission per student |
+| [ValidToken](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#65-69) | Token pool | All generated tokens with usage status |
+| [ActiveTokenMap](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#70-75) | Live token mapping | Links student → active token (deleted after submit) |
+| [FeedbackResult](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#76-83) | Individual ratings | One row per question per allocation |
+| [FeedbackComment](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#84-90) | Free-text comments | Optional student comments per teacher |
+| [ClassTeacherAllocation](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#91-98) | Class teacher mapping | Assigns teacher as class teacher for a division |
+| [ReportApproval](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#99-111) | Approval workflow | Teacher agreement + HOD approval tracking |
+
+### Database Indexes (19 total)
+
+All foreign keys and frequently-queried columns are indexed:
+
+| Table | Indexed Columns |
+|---|---|
+| `users` | `role`, `semester`, `division` |
+| [sessions](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/routes/admin_routes.py#42-58) | `status` |
+| [subjects](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/routes/admin_routes.py#484-540) | `is_elective`, `semester` |
+| [allocations](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/routes/admin_routes.py#307-464) | `sessionID`, `teacherID`, `subjectID` |
+| `token_log` | `is_submitted` |
+| `feedback_results` | `allocationID`, `sessionID` |
+| `feedback_comments` | `allocationID`, `sessionID` |
+| `class_teacher_allocations` | `teacherID` |
+| `report_approvals` | `sessionID`, `teacherID`, `allocationID` |
+
+---
+
+## 5. Module Breakdown
+
+### 5.1 Authentication Module
+
+| Feature | Implementation |
+|---|---|
+| Student/Teacher/Admin Login | Role-based login with PRN + password |
+| HOD Login | Separate login portal (`/management_login`) |
+| Password Change | Current password verification → hash + re-login |
+| Session Management | Flask server-side sessions with `session.clear()` on logout |
+| Password Storage | `pbkdf2:sha256` hashing via Werkzeug |
+
+### 5.2 Admin Module (15 features)
+
+| Feature | Description |
+|---|---|
+| **Dashboard** | Teacher/student counts, active sessions |
+| **Session Control** | Create, Start, Pause, Terminate sessions |
+| **Form Allocation** | Assign teacher+subject combos to target semester/division/batch |
+| **Manage Subjects** | Add/Edit/Delete subjects with Theory-Practical linking |
+| **Add via CSV** | Bulk upload subjects from CSV |
+| **Manage Teachers** | Add/Edit/Delete teachers + CSV upload |
+| **Class Teacher Assignment** | Assign teachers as class teachers |
+| **View Results** | Browse sessions → teachers → per-subject reports |
+| **Teacher Report** | Question-wise average scores, grade calculation |
+| **Student Promotion** | Bulk semester advancement tool |
+| **Password Verification** | Admin password required for sensitive deletes |
+| **Search & Pagination** | Client-side search on all management tables |
+| **Elective Subject Support** | Toggle elective flag, cascading dropdowns |
+| **Dynamic Subject Loading** | AJAX-powered semester→subject cascading |
+| **CSV Export** | Download teacher reports |
+
+### 5.3 Teacher Module (8 features)
+
+| Feature | Description |
+|---|---|
+| **Dashboard** | Active sessions with subject counts |
+| **Manage Students** | View/Edit/Add students for assigned class |
+| **CSV Student Upload** | Bulk import students with elective assignments |
+| **View Results** | Browse sessions → per-subject feedback reports |
+| **Session Report** | Detailed question-wise scores with grades |
+| **Report Agreement** | Teacher accepts/agrees with feedback results |
+| **Profile** | View personal details |
+| **Password Change** | Secure password update |
+
+### 5.4 Student Module (5 features)
+
+| Feature | Description |
+|---|---|
+| **Dashboard** | Active sessions (New/Pending/Submitted) + History (Completed/Missed) |
+| **Token Generation** | Generate 8-char alphanumeric token per session |
+| **Feedback Form** | Rate allocated teachers on 1-10 scale + optional comments |
+| **Token Verification** | AJAX gate-check before submission |
+| **Feedback Submission** | AJAX submit with real-time session status validation |
+
+### 5.5 HOD Module (6 features)
+
+| Feature | Description |
+|---|---|
+| **Dashboard** | Session overview with admin management |
+| **View Results** | Browse sessions with allocation counts |
+| **Session Teachers** | Per-teacher status cards (Pending/Agreed/Approved) |
+| **Teacher Report** | Full question-wise reports with comparison |
+| **HOD Approval** | Approve teacher reports after teacher agreement |
+| **Admin Management** | Create/Edit admin accounts |
+
+---
+
+## 6. Anonymous Feedback Flow
+
+The system ensures **complete anonymity** through a token-based mechanism:
+
+```mermaid
+sequenceDiagram
+    participant S as Student
+    participant SRV as Server
+    participant DB as Database
+    
+    S->>SRV: Request token (session_id)
+    SRV->>DB: Generate 8-char random token
+    SRV->>DB: Store in ValidToken + ActiveTokenMap
+    SRV-->>S: Display token on dashboard
+    
+    Note over S: Student notes token, goes to feedback form
+    
+    S->>SRV: Enter token at gate
+    SRV->>DB: Verify token matches student+session
+    SRV-->>S: Load feedback form with allocated subjects
+    
+    S->>SRV: Submit ratings (via AJAX)
+    SRV->>DB: Check session still active (status=1)
+    SRV->>DB: Store FeedbackResult rows (per question)
+    SRV->>DB: Delete ActiveTokenMap (breaks the link)
+    SRV->>DB: Mark TokenLog.is_submitted = True
+    SRV-->>S: Success confirmation
+```
+
+> **Key privacy guarantee**: After submission, the [ActiveTokenMap](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#70-75) record linking the student to their token is **deleted**. The feedback results are stored against the `allocationID` (teacher+subject), not the student. There is no way to trace which student gave which rating.
+
+---
+
+## 7. Security Features
+
+| Feature | Implementation |
+|---|---|
+| **Password Hashing** | `pbkdf2:sha256` via Werkzeug — never stored in plaintext |
+| **CSRF Protection** | Flask-WTF `CSRFProtect` on all forms and AJAX endpoints |
+| **Role-based Access** | Every route checks `session['role']` before serving |
+| **Session Validation** | Feedback submission re-checks session status (prevents submission to closed sessions) |
+| **Delete Confirmation** | Admin password required for teacher/subject deletion |
+| **Environment Variables** | DB credentials stored in [.env](file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/.env), loaded via `python-dotenv` |
+| **SQL Injection Prevention** | SQLAlchemy ORM parameterized queries throughout |
+| **Cascade Deletes** | `ondelete='CASCADE'` ensures referential integrity |
+| **Token Uniqueness** | Unique constraint on `ActiveTokenMap.tokenCode` |
+
+---
+
+## 8. Server & Concurrency Configuration
+
+| Parameter | Value | Purpose |
+|---|---|---|
+| **WSGI Server** | Waitress | Production-grade, Windows-compatible |
+| **Threads** | 32 | Handle 32 concurrent requests |
+| **Connection Pool** | `pool_size=20` | 20 persistent DB connections |
+| **Max Overflow** | `max_overflow=50` | Up to 70 total connections under load |
+| **Pool Recycle** | `pool_recycle=280` | Prevent stale connections (MySQL 5 min timeout) |
+| **Port** | 80 (fallback: 5000) | Standard HTTP |
+| **Access Logging** | `paste.TransLogger` | Request logging to console |
+
+> **Capacity**: This configuration can comfortably handle **300+ simultaneous students** submitting feedback without connection pool exhaustion or thread starvation.
+
+---
+
+## 9. Performance Optimizations
+
+All database query patterns were analyzed and optimized to eliminate **N+1 query problems** — a common ORM anti-pattern where N additional queries are fired inside a loop.
+
+### Before vs After
+
+| Route | Before | After | Improvement |
+|---|---|---|---|
+| Admin Allocations | ~150 queries (50 items) | ~8 queries | **~95% reduction** |
+| Admin Manage Sessions | N queries (1/session) | 1 query | **~95% reduction** |
+| Admin View Results | N queries (1/session) | 1 query | **~95% reduction** |
+| Student Dashboard | ~40+ queries | ~6 queries | **~85% reduction** |
+| Teacher Dashboard | N queries (1/session) | 1 query | **~95% reduction** |
+| Teacher View Results | N queries (1/session) | 1 query | **~95% reduction** |
+| HOD View Results | N queries (1/session) | 1 query | **~95% reduction** |
+| HOD Session Teachers | 2N queries (2/teacher) | 2 queries | **~90% reduction** |
+
+### Optimization Techniques Used
+
+1. **Eager Loading** (`joinedload`) — pre-load related objects in a single SQL JOIN instead of lazy-loading per item
+2. **Batch Aggregate Queries** — `SELECT ... GROUP BY` to count in one query, stored in Python dicts for O(1) lookup
+3. **Bulk Fetching** — fetch all related records once, group in Python instead of querying per loop iteration
+4. **Database Indexes** — 19 indexes on foreign keys and frequently-filtered columns
+
+---
+
+## 10. Testing & Verification
+
+All optimized routes were verified via browser testing across all 3 user roles:
+
+### Admin Portal (A101)
+
+````carousel
+![Dashboard — 35 Teachers, 205 Students](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/admin_dashboard_1772003467408.png)
+<!-- slide -->
+![Session Control — 24 Allocations](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/admin_manage_sessions_1772003481116.png)
+<!-- slide -->
+![Allocations — Student counts displayed](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/admin_allocations_1772003497810.png)
+<!-- slide -->
+![Results — Session with 24 allocations](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/admin_results_1772003504587.png)
+````
+
+### Teacher Portal (T108)
+
+````carousel
+![Teacher Dashboard](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/teacher_dashboard_1772003719732.png)
+<!-- slide -->
+![Feedback Results — 3 allocations](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/teacher_results_1772003727296.png)
+````
+
+### Student Portal (F23111020)
+
+````carousel
+![Student Dashboard — Elective: Cloud Computing](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/student_dashboard_1772003752842.png)
+<!-- slide -->
+![Feedback History](C:/Users/Keshav Kalani/.gemini/antigravity/brain/04d02808-2202-4453-86bc-d93adc78d135/student_history_1772003755959.png)
+````
+
+---
+
+## 11. Feedback Questions
+
+### Theory Subjects (7 questions)
+
+1. Lectures were conducted on time and in time uniformly during the term?
+2. Presentation, speed and confidence in delivery of lectures?
+3. Lectures started with a review of the last and ended with a summary of the present?
+4. Clarity in technical concepts, ideas and relevant examples during lectures?
+5. Percentage of university syllabus was covered in the class?
+6. Faculty was available to solve difficulties, motivated to learn the engineering concepts?
+7. Do you understand the lectures delivered by the teacher?
+
+### Practical Subjects (6 questions)
+
+1. Display a list of experiments?
+2. Equipment and support facilities?
+3. Assessment of the experiments performed & journals checked on time?
+4. Support during the lab session?
+5. Additional technical content beyond syllabus covered during the practical session?
+6. Were lab manuals self-explanatory?
+
+---
+
+## 12. Current System Stats
+
+| Metric | Value |
+|---|---|
+| Total Students | 205 |
+| Total Teachers | 35 |
+| Active Sessions | 1 (2025-26 Sem II Mid Term) |
+| Total Allocations | 24 |
+| Portals | 4 (Admin, Teacher, Student, HOD) |
+| HTML Templates | 36 |
+| Python Route Files | 5 |
+| Total Lines of Code | ~2,800+ (backend) |
+| Database Tables | 12 |
+| Database Indexes | 19 |

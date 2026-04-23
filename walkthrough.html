@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walkthrough</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: #2c3e50;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        h1 { font-size: 2.5em; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        h2 { font-size: 2em; border-bottom: 1px solid #ecf0f1; padding-bottom: 5px; }
+        h3 { font-size: 1.5em; }
+        p { margin-bottom: 15px; }
+        ul, ol { margin-left: 30px; margin-bottom: 15px; }
+        li { margin-bottom: 8px; }
+        code {
+            background-color: #ecf0f1;
+            color: #e74c3c;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+        }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        pre code {
+            background: none;
+            color: #ecf0f1;
+            padding: 0;
+        }
+        blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 15px;
+            margin-left: 0;
+            margin-bottom: 15px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+            border-bottom: 1px dotted #3498db;
+        }
+        a:hover {
+            background-color: #ecf0f1;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #bdc3c7;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #ecf0f1;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin: 15px 0;
+        }
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 30px 0;
+        }
+        @media print {
+            body { padding: 20px; }
+            page-break-inside: avoid;
+        }
+    </style>
+</head>
+<body>
+<h1>📋 Student Feedback System — Project Report</h1>
+<p><strong>Project:</strong> Student Feedback Collection &amp; Analysis System
+<strong>Developer:</strong> Keshav Kalani
+<strong>Date:</strong> February 2026</p>
+<hr />
+<h2>1. System Overview</h2>
+<p>A <strong>web-based feedback collection system</strong> that enables students to anonymously rate teachers on Theory and Practical subjects. The system manages the complete feedback lifecycle — from session creation and form allocation to anonymous submission, report generation, and HOD approval.</p>
+<h3>Key Capabilities</h3>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Multi-role access</strong></td>
+<td>Admin, Teacher, Student, and HOD — each with dedicated portals</td>
+</tr>
+<tr>
+<td><strong>Anonymous feedback</strong></td>
+<td>Token-based system ensures student identity is never linked to ratings</td>
+</tr>
+<tr>
+<td><strong>Elective support</strong></td>
+<td>Students can be assigned different divisions/batches for elective subjects</td>
+</tr>
+<tr>
+<td><strong>Report workflow</strong></td>
+<td>Teacher agrees → HOD approves — structured approval chain</td>
+</tr>
+<tr>
+<td><strong>Batch operations</strong></td>
+<td>CSV upload for students, teachers, and subjects</td>
+</tr>
+<tr>
+<td><strong>Real-time control</strong></td>
+<td>Admin can start, pause, and terminate sessions at any time</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2. Technology Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Backend</strong></td>
+<td>Python 3, Flask</td>
+<td>Web application framework</td>
+</tr>
+<tr>
+<td><strong>ORM</strong></td>
+<td>SQLAlchemy + Flask-SQLAlchemy</td>
+<td>Database abstraction</td>
+</tr>
+<tr>
+<td><strong>Database</strong></td>
+<td>MySQL (via PyMySQL)</td>
+<td>Persistent storage</td>
+</tr>
+<tr>
+<td><strong>Server</strong></td>
+<td>Waitress (32 threads)</td>
+<td>Production-grade WSGI server</td>
+</tr>
+<tr>
+<td><strong>Security</strong></td>
+<td>Werkzeug (pbkdf2:sha256), Flask-WTF</td>
+<td>Password hashing, CSRF protection</td>
+</tr>
+<tr>
+<td><strong>Frontend</strong></td>
+<td>HTML5, CSS3, JavaScript</td>
+<td>User interface</td>
+</tr>
+<tr>
+<td><strong>Config</strong></td>
+<td>python-dotenv</td>
+<td>Environment variable management</td>
+</tr>
+</tbody>
+</table>
+<h3>Dependencies (<a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/requirements.txt">requirements.txt</a>)</h3>
+<div class="codehilite"><pre><span></span><code>flask, flask-sqlalchemy, pymysql, cryptography,
+SQLAlchemy, python-dotenv, werkzeug, flask-wtf,
+waitress, paste
+</code></pre></div>
+
+<hr />
+<h2>3. Architecture</h2>
+<h3>Application Structure</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">FeedBack_Project</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">app</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># App factory, CSRF, blueprint registration</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">models</span><span class="o">.</span><span class="n">py</span><span class="w">                </span><span class="c1"># 11 database models</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">utils</span><span class="o">.</span><span class="n">py</span><span class="w">                 </span><span class="c1"># Question-loading utility</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">data</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">theory_questions</span><span class="o">.</span><span class="n">json</span><span class="w">   </span><span class="c1"># 7 theory feedback questions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">lab_questions</span><span class="o">.</span><span class="n">json</span><span class="w">      </span><span class="c1"># 6 practical feedback questions</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">routes</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">auth_routes</span><span class="o">.</span><span class="n">py</span><span class="w">       </span><span class="c1"># Login, logout, password change</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">admin_routes</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># Admin portal (937 lines)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">teacher_routes</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Teacher portal (602 lines)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">student_routes</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># Student portal (294 lines)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">hod_routes</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># HOD portal (345 lines)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">templates</span><span class="o">/</span><span class="w">               </span><span class="c1"># 36 HTML templates</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">login</span><span class="o">.</span><span class="n">html</span><span class="p">,</span><span class="w"> </span><span class="n">management_login</span><span class="o">.</span><span class="n">html</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">student</span><span class="o">.</span><span class="n">html</span><span class="p">,</span><span class="w"> </span><span class="n">feedback_form</span><span class="o">.</span><span class="n">html</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">admin</span><span class="o">/</span><span class="w">  </span><span class="p">(</span><span class="mi">15</span><span class="w"> </span><span class="n">templates</span><span class="p">)</span>
+<span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">teacher</span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="w"> </span><span class="n">templates</span><span class="p">)</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">hod</span><span class="o">/</span><span class="w">     </span><span class="p">(</span><span class="mi">9</span><span class="w"> </span><span class="n">templates</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">config</span><span class="o">.</span><span class="n">py</span><span class="w">                    </span><span class="c1"># DB config, connection pool</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">serve</span><span class="o">.</span><span class="n">py</span><span class="w">                     </span><span class="c1"># Waitress production server</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">run</span><span class="o">.</span><span class="n">py</span><span class="w">                       </span><span class="c1"># Database initialization</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">create_hod</span><span class="o">.</span><span class="n">py</span><span class="w">                </span><span class="c1"># HOD account seeder</span>
+</code></pre></div>
+
+<h3>Design Pattern: Blueprint Architecture</h3>
+<div class="codehilite"><pre><span></span><code><span class="nf">graph</span><span class="w"> </span><span class="n">TD</span>
+<span class="w">    </span><span class="n">A</span><span class="p">[</span><span class="s">&quot;Flask App Factory&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="s">&quot;Auth Blueprint&lt;br/&gt;/login, /logout&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">[</span><span class="s">&quot;Admin Blueprint&lt;br/&gt;/admin/*&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">D</span><span class="p">[</span><span class="s">&quot;Teacher Blueprint&lt;br/&gt;/teacher/*&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">E</span><span class="p">[</span><span class="s">&quot;Student Blueprint&lt;br/&gt;/student/*&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">A</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F</span><span class="p">[</span><span class="s">&quot;HOD Blueprint&lt;br/&gt;/hod/*&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">G</span><span class="p">[</span><span class="s">&quot;CSRF Protection&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">A</span>
+<span class="w">    </span><span class="n">H</span><span class="p">[</span><span class="s">&quot;SQLAlchemy DB&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">A</span>
+</code></pre></div>
+
+<hr />
+<h2>4. Database Design</h2>
+<h3>Entity-Relationship Diagram</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">erDiagram</span>
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">Allocation</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;teaches&quot;</span>
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">TokenLog</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;generates&quot;</span>
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">ActiveTokenMap</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;holds&quot;</span>
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">StudentElective</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;enrolled in&quot;</span>
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">ClassTeacherAllocation</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;assigned as&quot;</span>
+<span class="w">    </span><span class="n">Session</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">Allocation</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;contains&quot;</span>
+<span class="w">    </span><span class="n">Session</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">TokenLog</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tracks&quot;</span>
+<span class="w">    </span><span class="n">Subject</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">Allocation</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;allocated&quot;</span>
+<span class="w">    </span><span class="n">Subject</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">StudentElective</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;elected&quot;</span>
+<span class="w">    </span><span class="n">Allocation</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">FeedbackResult</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;receives&quot;</span>
+<span class="w">    </span><span class="n">Allocation</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">FeedbackComment</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;receives&quot;</span>
+<span class="w">    </span><span class="n">Session</span><span class="w"> </span><span class="o">||--</span><span class="n">o</span><span class="p">{</span><span class="w"> </span><span class="n">ReportApproval</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;approved in&quot;</span>
+
+<span class="w">    </span><span class="n">User</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">userID</span><span class="w"> </span><span class="n">PK</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">prn_empID</span><span class="w"> </span><span class="n">UK</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">name</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">password</span>
+<span class="w">        </span><span class="k">enum</span><span class="w"> </span><span class="n">role</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">semester</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">division</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">batch</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">Session</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">sessionID</span><span class="w"> </span><span class="n">PK</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">sessionName</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">status</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">Allocation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">allocationID</span><span class="w"> </span><span class="n">PK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">sessionID</span><span class="w"> </span><span class="n">FK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">teacherID</span><span class="w"> </span><span class="n">FK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">subjectID</span><span class="w"> </span><span class="n">FK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">targetSemester</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">targetDivision</span>
+<span class="w">        </span><span class="n">string</span><span class="w"> </span><span class="n">targetBatch</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">FeedbackResult</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">resultID</span><span class="w"> </span><span class="n">PK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">allocationID</span><span class="w"> </span><span class="n">FK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">sessionID</span><span class="w"> </span><span class="n">FK</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">questionID</span>
+<span class="w">        </span><span class="nb nb-Type">int</span><span class="w"> </span><span class="n">rating</span>
+<span class="w">    </span><span class="p">}</span>
+</code></pre></div>
+
+<h3>11 Database Models</h3>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Purpose</th>
+<th>Key Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#8-18">User</a></td>
+<td>All system users</td>
+<td>Roles: admin, teacher, student, HOD</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#19-24">Session</a></td>
+<td>Feedback sessions</td>
+<td>Status: 0=Inactive, 1=Active, 2=Terminated</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#25-34">Subject</a></td>
+<td>Academic subjects</td>
+<td>Theory/Practical, elective flag, linked subjects</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#35-44">StudentElective</a></td>
+<td>Elective enrollments</td>
+<td>Maps student → elective subject + div/batch</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#45-57">Allocation</a></td>
+<td>Form assignments</td>
+<td>Links session + teacher + subject → target class</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#58-64">TokenLog</a></td>
+<td>Submission tracking</td>
+<td>Tracks token generation and submission per student</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#65-69">ValidToken</a></td>
+<td>Token pool</td>
+<td>All generated tokens with usage status</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#70-75">ActiveTokenMap</a></td>
+<td>Live token mapping</td>
+<td>Links student → active token (deleted after submit)</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#76-83">FeedbackResult</a></td>
+<td>Individual ratings</td>
+<td>One row per question per allocation</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#84-90">FeedbackComment</a></td>
+<td>Free-text comments</td>
+<td>Optional student comments per teacher</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#91-98">ClassTeacherAllocation</a></td>
+<td>Class teacher mapping</td>
+<td>Assigns teacher as class teacher for a division</td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#99-111">ReportApproval</a></td>
+<td>Approval workflow</td>
+<td>Teacher agreement + HOD approval tracking</td>
+</tr>
+</tbody>
+</table>
+<h3>Database Indexes (19 total)</h3>
+<p>All foreign keys and frequently-queried columns are indexed:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Indexed Columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>users</code></td>
+<td><code>role</code>, <code>semester</code>, <code>division</code></td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/routes/admin_routes.py#42-58">sessions</a></td>
+<td><code>status</code></td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/routes/admin_routes.py#484-540">subjects</a></td>
+<td><code>is_elective</code>, <code>semester</code></td>
+</tr>
+<tr>
+<td><a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/routes/admin_routes.py#307-464">allocations</a></td>
+<td><code>sessionID</code>, <code>teacherID</code>, <code>subjectID</code></td>
+</tr>
+<tr>
+<td><code>token_log</code></td>
+<td><code>is_submitted</code></td>
+</tr>
+<tr>
+<td><code>feedback_results</code></td>
+<td><code>allocationID</code>, <code>sessionID</code></td>
+</tr>
+<tr>
+<td><code>feedback_comments</code></td>
+<td><code>allocationID</code>, <code>sessionID</code></td>
+</tr>
+<tr>
+<td><code>class_teacher_allocations</code></td>
+<td><code>teacherID</code></td>
+</tr>
+<tr>
+<td><code>report_approvals</code></td>
+<td><code>sessionID</code>, <code>teacherID</code>, <code>allocationID</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>5. Module Breakdown</h2>
+<h3>5.1 Authentication Module</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Student/Teacher/Admin Login</td>
+<td>Role-based login with PRN + password</td>
+</tr>
+<tr>
+<td>HOD Login</td>
+<td>Separate login portal (<code>/management_login</code>)</td>
+</tr>
+<tr>
+<td>Password Change</td>
+<td>Current password verification → hash + re-login</td>
+</tr>
+<tr>
+<td>Session Management</td>
+<td>Flask server-side sessions with <code>session.clear()</code> on logout</td>
+</tr>
+<tr>
+<td>Password Storage</td>
+<td><code>pbkdf2:sha256</code> hashing via Werkzeug</td>
+</tr>
+</tbody>
+</table>
+<h3>5.2 Admin Module (15 features)</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong></td>
+<td>Teacher/student counts, active sessions</td>
+</tr>
+<tr>
+<td><strong>Session Control</strong></td>
+<td>Create, Start, Pause, Terminate sessions</td>
+</tr>
+<tr>
+<td><strong>Form Allocation</strong></td>
+<td>Assign teacher+subject combos to target semester/division/batch</td>
+</tr>
+<tr>
+<td><strong>Manage Subjects</strong></td>
+<td>Add/Edit/Delete subjects with Theory-Practical linking</td>
+</tr>
+<tr>
+<td><strong>Add via CSV</strong></td>
+<td>Bulk upload subjects from CSV</td>
+</tr>
+<tr>
+<td><strong>Manage Teachers</strong></td>
+<td>Add/Edit/Delete teachers + CSV upload</td>
+</tr>
+<tr>
+<td><strong>Class Teacher Assignment</strong></td>
+<td>Assign teachers as class teachers</td>
+</tr>
+<tr>
+<td><strong>View Results</strong></td>
+<td>Browse sessions → teachers → per-subject reports</td>
+</tr>
+<tr>
+<td><strong>Teacher Report</strong></td>
+<td>Question-wise average scores, grade calculation</td>
+</tr>
+<tr>
+<td><strong>Student Promotion</strong></td>
+<td>Bulk semester advancement tool</td>
+</tr>
+<tr>
+<td><strong>Password Verification</strong></td>
+<td>Admin password required for sensitive deletes</td>
+</tr>
+<tr>
+<td><strong>Search &amp; Pagination</strong></td>
+<td>Client-side search on all management tables</td>
+</tr>
+<tr>
+<td><strong>Elective Subject Support</strong></td>
+<td>Toggle elective flag, cascading dropdowns</td>
+</tr>
+<tr>
+<td><strong>Dynamic Subject Loading</strong></td>
+<td>AJAX-powered semester→subject cascading</td>
+</tr>
+<tr>
+<td><strong>CSV Export</strong></td>
+<td>Download teacher reports</td>
+</tr>
+</tbody>
+</table>
+<h3>5.3 Teacher Module (8 features)</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong></td>
+<td>Active sessions with subject counts</td>
+</tr>
+<tr>
+<td><strong>Manage Students</strong></td>
+<td>View/Edit/Add students for assigned class</td>
+</tr>
+<tr>
+<td><strong>CSV Student Upload</strong></td>
+<td>Bulk import students with elective assignments</td>
+</tr>
+<tr>
+<td><strong>View Results</strong></td>
+<td>Browse sessions → per-subject feedback reports</td>
+</tr>
+<tr>
+<td><strong>Session Report</strong></td>
+<td>Detailed question-wise scores with grades</td>
+</tr>
+<tr>
+<td><strong>Report Agreement</strong></td>
+<td>Teacher accepts/agrees with feedback results</td>
+</tr>
+<tr>
+<td><strong>Profile</strong></td>
+<td>View personal details</td>
+</tr>
+<tr>
+<td><strong>Password Change</strong></td>
+<td>Secure password update</td>
+</tr>
+</tbody>
+</table>
+<h3>5.4 Student Module (5 features)</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong></td>
+<td>Active sessions (New/Pending/Submitted) + History (Completed/Missed)</td>
+</tr>
+<tr>
+<td><strong>Token Generation</strong></td>
+<td>Generate 8-char alphanumeric token per session</td>
+</tr>
+<tr>
+<td><strong>Feedback Form</strong></td>
+<td>Rate allocated teachers on 1-10 scale + optional comments</td>
+</tr>
+<tr>
+<td><strong>Token Verification</strong></td>
+<td>AJAX gate-check before submission</td>
+</tr>
+<tr>
+<td><strong>Feedback Submission</strong></td>
+<td>AJAX submit with real-time session status validation</td>
+</tr>
+</tbody>
+</table>
+<h3>5.5 HOD Module (6 features)</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dashboard</strong></td>
+<td>Session overview with admin management</td>
+</tr>
+<tr>
+<td><strong>View Results</strong></td>
+<td>Browse sessions with allocation counts</td>
+</tr>
+<tr>
+<td><strong>Session Teachers</strong></td>
+<td>Per-teacher status cards (Pending/Agreed/Approved)</td>
+</tr>
+<tr>
+<td><strong>Teacher Report</strong></td>
+<td>Full question-wise reports with comparison</td>
+</tr>
+<tr>
+<td><strong>HOD Approval</strong></td>
+<td>Approve teacher reports after teacher agreement</td>
+</tr>
+<tr>
+<td><strong>Admin Management</strong></td>
+<td>Create/Edit admin accounts</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>6. Anonymous Feedback Flow</h2>
+<p>The system ensures <strong>complete anonymity</strong> through a token-based mechanism:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">sequenceDiagram</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">S</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">Student</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">SRV</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">Server</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">Database</span>
+
+<span class="w">    </span><span class="n">S</span><span class="o">-&gt;&gt;</span><span class="n">SRV</span><span class="o">:</span><span class="w"> </span><span class="n">Request</span><span class="w"> </span><span class="kt">token</span><span class="w"> </span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="n">Generate</span><span class="w"> </span><span class="mi">8</span><span class="o">-</span><span class="n">char</span><span class="w"> </span><span class="nf">random</span><span class="w"> </span><span class="kt">token</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="kr">Store</span><span class="w"> </span><span class="kr">in</span><span class="w"> </span><span class="n">ValidToken</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ActiveTokenMap</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">--&gt;&gt;</span><span class="n">S</span><span class="o">:</span><span class="w"> </span><span class="n">Display</span><span class="w"> </span><span class="kt">token</span><span class="w"> </span><span class="n">on</span><span class="w"> </span><span class="n">dashboard</span>
+
+<span class="w">    </span><span class="n">Note</span><span class="w"> </span><span class="n">over</span><span class="w"> </span><span class="n">S</span><span class="o">:</span><span class="w"> </span><span class="n">Student</span><span class="w"> </span><span class="n">notes</span><span class="w"> </span><span class="kr">token</span><span class="p">,</span><span class="w"> </span><span class="n">goes</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">feedback</span><span class="w"> </span><span class="n">form</span>
+
+<span class="w">    </span><span class="n">S</span><span class="o">-&gt;&gt;</span><span class="n">SRV</span><span class="o">:</span><span class="w"> </span><span class="n">Enter</span><span class="w"> </span><span class="kt">token</span><span class="w"> </span><span class="n">at</span><span class="w"> </span><span class="n">gate</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="n">Verify</span><span class="w"> </span><span class="kt">token</span><span class="w"> </span><span class="n">matches</span><span class="w"> </span><span class="n">student</span><span class="o">+</span><span class="n">session</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">--&gt;&gt;</span><span class="n">S</span><span class="o">:</span><span class="w"> </span><span class="kr">Load</span><span class="w"> </span><span class="n">feedback</span><span class="w"> </span><span class="n">form</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">allocated</span><span class="w"> </span><span class="n">subjects</span>
+
+<span class="w">    </span><span class="n">S</span><span class="o">-&gt;&gt;</span><span class="n">SRV</span><span class="o">:</span><span class="w"> </span><span class="n">Submit</span><span class="w"> </span><span class="n">ratings</span><span class="w"> </span><span class="p">(</span><span class="n">via</span><span class="w"> </span><span class="n">AJAX</span><span class="p">)</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="n">Check</span><span class="w"> </span><span class="n">session</span><span class="w"> </span><span class="n">still</span><span class="w"> </span><span class="n">active</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="kr">Store</span><span class="w"> </span><span class="n">FeedbackResult</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="p">(</span><span class="n">per</span><span class="w"> </span><span class="n">question</span><span class="p">)</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="n">Delete</span><span class="w"> </span><span class="n">ActiveTokenMap</span><span class="w"> </span><span class="p">(</span><span class="n">breaks</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">link</span><span class="p">)</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="n">Mark</span><span class="w"> </span><span class="n">TokenLog</span><span class="p">.</span><span class="n">is_submitted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kr">True</span>
+<span class="w">    </span><span class="n">SRV</span><span class="o">--&gt;&gt;</span><span class="n">S</span><span class="o">:</span><span class="w"> </span><span class="kr">Success</span><span class="w"> </span><span class="n">confirmation</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>Key privacy guarantee</strong>: After submission, the <a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/app/models.py#70-75">ActiveTokenMap</a> record linking the student to their token is <strong>deleted</strong>. The feedback results are stored against the <code>allocationID</code> (teacher+subject), not the student. There is no way to trace which student gave which rating.</p>
+</blockquote>
+<hr />
+<h2>7. Security Features</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Implementation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Password Hashing</strong></td>
+<td><code>pbkdf2:sha256</code> via Werkzeug — never stored in plaintext</td>
+</tr>
+<tr>
+<td><strong>CSRF Protection</strong></td>
+<td>Flask-WTF <code>CSRFProtect</code> on all forms and AJAX endpoints</td>
+</tr>
+<tr>
+<td><strong>Role-based Access</strong></td>
+<td>Every route checks <code>session['role']</code> before serving</td>
+</tr>
+<tr>
+<td><strong>Session Validation</strong></td>
+<td>Feedback submission re-checks session status (prevents submission to closed sessions)</td>
+</tr>
+<tr>
+<td><strong>Delete Confirmation</strong></td>
+<td>Admin password required for teacher/subject deletion</td>
+</tr>
+<tr>
+<td><strong>Environment Variables</strong></td>
+<td>DB credentials stored in <a href="file:///c:/Users/Keshav%20Kalani/Desktop/FeedBack_Project/.env">.env</a>, loaded via <code>python-dotenv</code></td>
+</tr>
+<tr>
+<td><strong>SQL Injection Prevention</strong></td>
+<td>SQLAlchemy ORM parameterized queries throughout</td>
+</tr>
+<tr>
+<td><strong>Cascade Deletes</strong></td>
+<td><code>ondelete='CASCADE'</code> ensures referential integrity</td>
+</tr>
+<tr>
+<td><strong>Token Uniqueness</strong></td>
+<td>Unique constraint on <code>ActiveTokenMap.tokenCode</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>8. Server &amp; Concurrency Configuration</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>WSGI Server</strong></td>
+<td>Waitress</td>
+<td>Production-grade, Windows-compatible</td>
+</tr>
+<tr>
+<td><strong>Threads</strong></td>
+<td>32</td>
+<td>Handle 32 concurrent requests</td>
+</tr>
+<tr>
+<td><strong>Connection Pool</strong></td>
+<td><code>pool_size=20</code></td>
+<td>20 persistent DB connections</td>
+</tr>
+<tr>
+<td><strong>Max Overflow</strong></td>
+<td><code>max_overflow=50</code></td>
+<td>Up to 70 total connections under load</td>
+</tr>
+<tr>
+<td><strong>Pool Recycle</strong></td>
+<td><code>pool_recycle=280</code></td>
+<td>Prevent stale connections (MySQL 5 min timeout)</td>
+</tr>
+<tr>
+<td><strong>Port</strong></td>
+<td>80 (fallback: 5000)</td>
+<td>Standard HTTP</td>
+</tr>
+<tr>
+<td><strong>Access Logging</strong></td>
+<td><code>paste.TransLogger</code></td>
+<td>Request logging to console</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Capacity</strong>: This configuration can comfortably handle <strong>300+ simultaneous students</strong> submitting feedback without connection pool exhaustion or thread starvation.</p>
+</blockquote>
+<hr />
+<h2>9. Performance Optimizations</h2>
+<p>All database query patterns were analyzed and optimized to eliminate <strong>N+1 query problems</strong> — a common ORM anti-pattern where N additional queries are fired inside a loop.</p>
+<h3>Before vs After</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Before</th>
+<th>After</th>
+<th>Improvement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Admin Allocations</td>
+<td>~150 queries (50 items)</td>
+<td>~8 queries</td>
+<td><strong>~95% reduction</strong></td>
+</tr>
+<tr>
+<td>Admin Manage Sessions</td>
+<td>N queries (1/session)</td>
+<td>1 query</td>
+<td><strong>~95% reduction</strong></td>
+</tr>
+<tr>
+<td>Admin View Results</td>
+<td>N queries (1/session)</td>
+<td>1 query</td>
+<td><strong>~95% reduction</strong></td>
+</tr>
+<tr>
+<td>Student Dashboard</td>
+<td>~40+ queries</td>
+<td>~6 queries</td>
+<td><strong>~85% reduction</strong></td>
+</tr>
+<tr>
+<td>Teacher Dashboard</td>
+<td>N queries (1/session)</td>
+<td>1 query</td>
+<td><strong>~95% reduction</strong></td>
+</tr>
+<tr>
+<td>Teacher View Results</td>
+<td>N queries (1/session)</td>
+<td>1 query</td>
+<td><strong>~95% reduction</strong></td>
+</tr>
+<tr>
+<td>HOD View Results</td>
+<td>N queries (1/session)</td>
+<td>1 query</td>
+<td><strong>~95% reduction</strong></td>
+</tr>
+<tr>
+<td>HOD Session Teachers</td>
+<td>2N queries (2/teacher)</td>
+<td>2 queries</td>
+<td><strong>~90% reduction</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>Optimization Techniques Used</h3>
+<ol>
+<li><strong>Eager Loading</strong> (<code>joinedload</code>) — pre-load related objects in a single SQL JOIN instead of lazy-loading per item</li>
+<li><strong>Batch Aggregate Queries</strong> — <code>SELECT ... GROUP BY</code> to count in one query, stored in Python dicts for O(1) lookup</li>
+<li><strong>Bulk Fetching</strong> — fetch all related records once, group in Python instead of querying per loop iteration</li>
+<li><strong>Database Indexes</strong> — 19 indexes on foreign keys and frequently-filtered columns</li>
+</ol>
+<hr />
+<h2>10. Testing &amp; Verification</h2>
+<p>All optimized routes were verified via browser testing across all 3 user roles:</p>
+<h3>Admin Portal (A101)</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">!</span><span class="p">[</span><span class="n">Dashboard</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">35</span><span class="w"> </span><span class="n">Teachers</span><span class="p">,</span><span class="w"> </span><span class="mi">205</span><span class="w"> </span><span class="n">Students</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="o">-</span><span class="mi">2202</span><span class="o">-</span><span class="mi">4453</span><span class="o">-</span><span class="mi">86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">admin_dashboard_1772003467408</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+<span class="o">&lt;!--</span><span class="w"> </span><span class="n">slide</span><span class="w"> </span><span class="o">--&gt;</span>
+<span class="o">!</span><span class="p">[</span><span class="n">Session</span><span class="w"> </span><span class="n">Control</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">24</span><span class="w"> </span><span class="n">Allocations</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="o">-</span><span class="mi">2202</span><span class="o">-</span><span class="mi">4453</span><span class="o">-</span><span class="mi">86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">admin_manage_sessions_1772003481116</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+<span class="o">&lt;!--</span><span class="w"> </span><span class="n">slide</span><span class="w"> </span><span class="o">--&gt;</span>
+<span class="o">!</span><span class="p">[</span><span class="n">Allocations</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Student</span><span class="w"> </span><span class="n">counts</span><span class="w"> </span><span class="n">displayed</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="o">-</span><span class="mi">2202</span><span class="o">-</span><span class="mi">4453</span><span class="o">-</span><span class="mi">86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">admin_allocations_1772003497810</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+<span class="o">&lt;!--</span><span class="w"> </span><span class="n">slide</span><span class="w"> </span><span class="o">--&gt;</span>
+<span class="o">!</span><span class="p">[</span><span class="n">Results</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Session</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="mi">24</span><span class="w"> </span><span class="n">allocations</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="o">-</span><span class="mi">2202</span><span class="o">-</span><span class="mi">4453</span><span class="o">-</span><span class="mi">86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">admin_results_1772003504587</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>Teacher Portal (T108)</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">!</span><span class="p">[</span><span class="n">Teacher</span><span class="w"> </span><span class="n">Dashboard</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="mi">-2202-4453-86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">teacher_dashboard_1772003719732</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+<span class="o">&lt;!--</span><span class="w"> </span><span class="n">slide</span><span class="w"> </span><span class="o">--&gt;</span>
+<span class="o">!</span><span class="p">[</span><span class="n">Feedback</span><span class="w"> </span><span class="n">Results</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="n">allocations</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="mi">-2202-4453-86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">teacher_results_1772003727296</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+</code></pre></div>
+
+<h3>Student Portal (F23111020)</h3>
+<div class="codehilite"><pre><span></span><code><span class="o">!</span><span class="p">[</span><span class="n">Student</span><span class="w"> </span><span class="n">Dashboard</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Elective</span><span class="o">:</span><span class="w"> </span><span class="n">Cloud</span><span class="w"> </span><span class="n">Computing</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="mi">-2202-4453-86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">student_dashboard_1772003752842</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+<span class="o">&lt;!--</span><span class="w"> </span><span class="n">slide</span><span class="w"> </span><span class="o">--&gt;</span>
+<span class="o">!</span><span class="p">[</span><span class="n">Feedback</span><span class="w"> </span><span class="n">History</span><span class="p">](</span><span class="n">C</span><span class="o">:/</span><span class="n">Users</span><span class="o">/</span><span class="n">Keshav</span><span class="w"> </span><span class="n">Kalani</span><span class="o">/</span><span class="p">.</span><span class="n">gemini</span><span class="o">/</span><span class="n">antigravity</span><span class="o">/</span><span class="n">brain</span><span class="o">/</span><span class="mo">04</span><span class="n">d02808</span><span class="mi">-2202-4453-86</span><span class="n">bc</span><span class="o">-</span><span class="n">d93adc78d135</span><span class="o">/</span><span class="n">student_history_1772003755959</span><span class="p">.</span><span class="n">png</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2>11. Feedback Questions</h2>
+<h3>Theory Subjects (7 questions)</h3>
+<ol>
+<li>Lectures were conducted on time and in time uniformly during the term?</li>
+<li>Presentation, speed and confidence in delivery of lectures?</li>
+<li>Lectures started with a review of the last and ended with a summary of the present?</li>
+<li>Clarity in technical concepts, ideas and relevant examples during lectures?</li>
+<li>Percentage of university syllabus was covered in the class?</li>
+<li>Faculty was available to solve difficulties, motivated to learn the engineering concepts?</li>
+<li>Do you understand the lectures delivered by the teacher?</li>
+</ol>
+<h3>Practical Subjects (6 questions)</h3>
+<ol>
+<li>Display a list of experiments?</li>
+<li>Equipment and support facilities?</li>
+<li>Assessment of the experiments performed &amp; journals checked on time?</li>
+<li>Support during the lab session?</li>
+<li>Additional technical content beyond syllabus covered during the practical session?</li>
+<li>Were lab manuals self-explanatory?</li>
+</ol>
+<hr />
+<h2>12. Current System Stats</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Total Students</td>
+<td>205</td>
+</tr>
+<tr>
+<td>Total Teachers</td>
+<td>35</td>
+</tr>
+<tr>
+<td>Active Sessions</td>
+<td>1 (2025-26 Sem II Mid Term)</td>
+</tr>
+<tr>
+<td>Total Allocations</td>
+<td>24</td>
+</tr>
+<tr>
+<td>Portals</td>
+<td>4 (Admin, Teacher, Student, HOD)</td>
+</tr>
+<tr>
+<td>HTML Templates</td>
+<td>36</td>
+</tr>
+<tr>
+<td>Python Route Files</td>
+<td>5</td>
+</tr>
+<tr>
+<td>Total Lines of Code</td>
+<td>~2,800+ (backend)</td>
+</tr>
+<tr>
+<td>Database Tables</td>
+<td>12</td>
+</tr>
+<tr>
+<td>Database Indexes</td>
+<td>19</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

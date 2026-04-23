@@ -694,6 +694,7 @@ def admin_change_password():
         
         user.password = generate_password_hash(new_pass, method='pbkdf2:sha256')
         db.session.commit()
+        session.pop('show_default_pass_warning', None)  # Clear the default-password warning
         flash("Password changed.", "success")
         
     return render_template('admin/change_password.html')

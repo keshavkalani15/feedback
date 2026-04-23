@@ -70,6 +70,17 @@ def login():
             
             log_login(username, role, 'SUCCESS', request.remote_addr, request.user_agent.string)
             
+            # --- DEFAULT PASSWORD CHECK ---
+            # Detect if user is still using their auto-assigned default password
+            default_passwords = {
+                'student': 'Pass@123',
+                'admin':   'Admin@123',
+                'teacher': f'{user.prn_empID}@123',  # e.g. T101@123
+            }
+            default_pass = default_passwords.get(role)
+            if default_pass and check_password_hash(user.password, default_pass):
+                session['show_default_pass_warning'] = True
+            
             if role == 'student': 
                 return redirect(url_for('student.student_dashboard'))
             
@@ -101,6 +112,11 @@ def management_login():
             session['user_empid'] = user.prn_empID
             
             log_login(username, 'HOD', 'SUCCESS', request.remote_addr, request.user_agent.string)
+            
+            # --- DEFAULT PASSWORD CHECK FOR HOD ---
+            if check_password_hash(user.password, 'HOD@123'):
+                session['show_default_pass_warning'] = True
+            
             return redirect(url_for('hod.dashboard'))
             
         log_login(username, 'HOD', 'FAILED', request.remote_addr, request.user_agent.string)

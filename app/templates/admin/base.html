@@ -391,4 +391,35 @@
     });
 </script>
 
-</html>
+{% if session.get('show_default_pass_warning') %}
+<div id="default-pass-warning" style="
+    position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+    background: #fee2e2; color: #991b1b;
+    border: 1px solid #f87171; border-left: 5px solid #dc2626;
+    border-radius: 8px; padding: 18px 22px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    max-width: 340px; font-size: 0.9rem; line-height: 1.5;
+    animation: slideInRight 0.4s ease;
+">
+    <strong>&#9888;&#65039; Default Password Detected</strong><br>
+    You are using your <strong>default password</strong>. Please change it from <strong>Change Password</strong> to keep your account secure.
+    <span onclick="document.getElementById('default-pass-warning').style.display='none'"
+        style="float:right; cursor:pointer; font-weight:bold; margin-left:10px;">&#x2715;</span>
+</div>
+<script>
+    setTimeout(function() {
+        var w = document.getElementById('default-pass-warning');
+        if (w) { w.style.transition = 'opacity 0.5s'; w.style.opacity = '0'; setTimeout(function(){ w.style.display='none'; }, 500); }
+    }, 5000);
+</script>
+<style>
+    @keyframes slideInRight {
+        from { opacity: 0; transform: translateX(60px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+</style>
+{% endif %}
+
+</body>
+
+</html>
